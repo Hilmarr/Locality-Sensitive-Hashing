@@ -2,7 +2,7 @@
 %% set up the points
 clear all; close all; clc;
 
-nPoints = 1000;
+nPoints = 500;
 vectorLength = 128;
 noiseScale = 0.01;
 points1 = 2*rand(nPoints, vectorLength) - 1;
@@ -183,15 +183,15 @@ lshTime = toc(lshStart);
 hashValuesTime = hashValuesTime1 + hashValuesTime2;
 
 
-% Deal with time
+%% Deal with time
 
-naiveMatchingTime
-tablesCreatedTime
-matchingTime
-lshTime
-hashValuesTime1
-hashValuesTime2
-hashValuesTime
+% naiveMatchingTime
+% tablesCreatedTime
+% matchingTime
+% lshTime
+% hashValuesTime1
+% hashValuesTime2
+% hashValuesTime
 
 
 wrong = 0;
@@ -203,9 +203,21 @@ end
 correct = nPoints - wrong;
 correctRatio = correct/nPoints;
 
-correctRatio
+% correctRatio
 
-
-
+fprintf("N = %d", nPoints);
+fprintf("Matching time using naive method:      %f\n", naiveMatchingTime);
+fprintf("Total matching time using LSH:         %f\n", lshTime);
+disp(" *");
+fprintf("  time portion: hyperplane,vector multiplication:  %f%% \n", ...
+    100*hashValuesTime/lshTime);
+disp(" *");
+fprintf("  time portion spent creating and filling tables:  %f%% \n", ...
+    100*tablesCreatedTime/lshTime);
+fprintf("  time portion spent matching 2nd dataset:         %f%% \n", ...
+    100*matchingTime/lshTime);
+fprintf("\n\n");
+fprintf("Time ratio (lsh time / naive time): %f\n", (lshTime/naiveMatchingTime));
+fprintf("LSH correct ratio:                  %f\n", correctRatio);
 
 
