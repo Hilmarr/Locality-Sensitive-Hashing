@@ -37,4 +37,76 @@ for i = 1:nPoints
     matching_naive(i,:) = [i, match];
 end
 
-%% LSH
+
+%% Contstruct LSH table (one LSH table)
+
+% Initialize random hyperplanes
+nPlanes = round(log2(nPoints));
+hyperplanes = 2*rand(nPlanes, vectorLength) - 1;
+maxHPLength = 1;
+
+% % Give the hyperplanes the length of somewhere between 0 and maxHPLength
+% % Not needed if asll hyperplanes go through the origin
+% for i = 1:nPlanes
+%     hyperplanes(i,:) = hyperplanes(i,:) ...
+%         * (maxHPLength * rand(1) / norm(hyperplanes(i,:), 2));
+% end
+
+% Initialize LSH tables
+indexGroupMap = zeros(nPoints, 1);
+nBoxes = 2^nPlanes;
+groupSizeMap = zeros(nBoxes, 1);
+groupIndexMap = zeros(nBoxes, 1);
+% There might faster ways to do this serially,
+% but this is designed to be parallelizable.
+% Thats why several mappings are used, instead of just creating
+% an in-place linked list.
+
+% Put points1 into our lsh table
+for i = 1:nPoints
+    point = points1(i,:);
+    hashcode = 0;
+    for j = 1:nPlanes
+        hplane = hyperplanes(j,:)';
+%         if (point*hplane > hplane'*hplane)
+%             hashcode = bitor(hashcode, bitshift(1, j-1));
+%         end
+        if (point*hplane > 0)
+            hashcode = bitor(hashcode, bitshift(1, j-1));
+        end
+    end
+    hashcode = hashcode+1; % Because matlab is weird with indexing
+    indexGroupMap(i) = hashcode;
+    groupSizeMap(hashcode) = groupSizeMap(i)+1;
+end
+
+cnt = 1;
+for i = 1:nBoxes
+    groupIndexMap(i) = cnt;
+    cnt = cnt + groupSizeMap(i);
+end
+    
+% LATER: check for duplicates
+% (in order to check whether using hyperplanes that go through the origin
+%  is better than more random hyperplanes, should probably plot number
+%  of duplicates given the length of the hyperplanes)
+
+%% Match points2 with points1 using LSH hash table
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
