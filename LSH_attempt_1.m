@@ -80,6 +80,16 @@ for i = 1:nPoints
     groupSizeMap(hashcode) = groupSizeMap(hashcode)+1;
 end
 
+% LATER: count duplicates in indexGroupMap
+% i.e. the number of points that gets mapped to a box where there already
+%      exists some points
+% (in order to check whether using hyperplanes that go through the origin
+%  is better than more random hyperplanes, should probably plot number
+%  of duplicates given the length of the hyperplanes)
+nDuplicates = sum(groupSizeMap(groupSizeMap > 1)-1);
+% See the maximum amount of points that get mapped to the same box
+largestBox = max(groupSizeMap);
+
 % Prepare the index map
 cnt = 1;
 for i = 1:nBoxes
@@ -109,11 +119,7 @@ for i = 1:nPoints
     
 end
     
-    
-% LATER: check for duplicates
-% (in order to check whether using hyperplanes that go through the origin
-%  is better than more random hyperplanes, should probably plot number
-%  of duplicates given the length of the hyperplanes)
+
 
 %% Match points2 with points1 using LSH hash table
 
