@@ -205,7 +205,7 @@ correctRatio = correct/nPoints;
 
 % correctRatio
 
-fprintf("N = %d", nPoints);
+fprintf("N = %d\n", nPoints);
 fprintf("Matching time using naive method:      %f\n", naiveMatchingTime);
 fprintf("Total matching time using LSH:         %f\n", lshTime);
 disp(" *");
