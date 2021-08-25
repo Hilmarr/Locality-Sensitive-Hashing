@@ -57,10 +57,18 @@ indexGroupMap = zeros(nPoints, 1);
 nBoxes = 2^nPlanes;
 groupSizeMap = zeros(nBoxes, 1);
 groupIndexMap = zeros(nBoxes, 1);
-% There might faster ways to do this serially,
-% but this is designed to be parallelizable.
-% Thats why several mappings are used, instead of just creating
-% an in-place linked list.
+groupIndexMapTails = zeros(nBoxes, 1);
+
+% % temporary storage as a number of linked lists
+% % idx: point, next
+% % next == 0, represents that it is a tail node,
+% % point == 0, represents that there is no point stored there
+% % This works in matlab since indexing starts from 1, in other languages,
+% % these metavalues should be -1 or some other invalid index.
+% groupTable = zeros(nPoints, 2);
+
+% array of points grouped by what box they got hashed into
+groupArray = zeros(nPoints, 1);
 
 % Put points1 into our lsh table
 for i = 1:nPoints
@@ -77,14 +85,38 @@ for i = 1:nPoints
     end
     hashcode = hashcode+1; % Because matlab is weird with indexing
     indexGroupMap(i) = hashcode;
-    groupSizeMap(hashcode) = groupSizeMap(i)+1;
+    groupSizeMap(hashcode) = groupSizeMap(hashcode)+1;
 end
 
+% Prepare the index map
 cnt = 1;
 for i = 1:nBoxes
     groupIndexMap(i) = cnt;
+    groupIndexMapTails(i) = groupIndexMap(i);
     cnt = cnt + groupSizeMap(i);
 end
+
+for i = 1:nPoints
+    % What group did the point get hashed into
+    hashcode = indexGroupMap(i);
+    % What is the start index of that group in groupArray
+    idx = groupIndexMapTails(hashcode);
+    
+%     % Add to table
+%     if (idx > nPoints || idx < 1)
+%         idx
+%     end
+%     if (groupArray(idx) > 0)
+%         fprintf("HEY!!! groupArray(idx) == %d, now putting in %d\n", groupArray(idx), i);
+%     end
+    
+    % Increment the index tail mapping
+    groupIndexMapTails(hashcode) = idx + 1;
+    
+    groupArray(idx) = i;
+    
+end
+    
     
 % LATER: check for duplicates
 % (in order to check whether using hyperplanes that go through the origin
@@ -92,8 +124,6 @@ end
 %  of duplicates given the length of the hyperplanes)
 
 %% Match points2 with points1 using LSH hash table
-
-
 
 
 
