@@ -4,7 +4,7 @@ clear all; close all; clc;
 
 nPoints = 100;
 vectorLength = 128;
-noiseScale = 0.2;
+noiseScale = 0.01;
 points1 = 2*rand(nPoints, vectorLength) - 1;
 % Noise generated with uniform random distribution.
 % Might later try it with a normal distribution, but this is good for now.
@@ -19,7 +19,7 @@ end
 
 %% matching using naive comparisons
 
-matching_naive = zeros(nPoints, 2);
+matching_naive = zeros(nPoints, 1);
 
 for i = 1:nPoints
     bestMatch = 1e10;
@@ -34,7 +34,7 @@ for i = 1:nPoints
             match = j;
         end
     end
-    matching_naive(i,:) = [i, match];
+    matching_naive(i) = match;
 end
 
 
@@ -62,7 +62,9 @@ groupIndexMapTails = zeros(nBoxes, 1);
 % array of points grouped by what box they got hashed into
 groupArray = zeros(nPoints, 1);
 
-% Put points1 into our lsh table
+% - Put points1 into our lsh table -
+
+% Calculate hash values, keep track of sizes of each group
 for i = 1:nPoints
     point = points1(i,:);
     hashcode = 0;
@@ -80,15 +82,15 @@ for i = 1:nPoints
     groupSizeMap(hashcode) = groupSizeMap(hashcode)+1;
 end
 
-% LATER: count duplicates in indexGroupMap
-% i.e. the number of points that gets mapped to a box where there already
-%      exists some points
-% (in order to check whether using hyperplanes that go through the origin
-%  is better than more random hyperplanes, should probably plot number
-%  of duplicates given the length of the hyperplanes)
-nDuplicates = sum(groupSizeMap(groupSizeMap > 1)-1);
-% See the maximum amount of points that get mapped to the same box
-largestBox = max(groupSizeMap);
+% % LATER: count duplicates in indexGroupMap
+% % i.e. the number of points that gets mapped to a box where there already
+% %      exists some points
+% % (in order to check whether using hyperplanes that go through the origin
+% %  is better than more random hyperplanes, should probably plot number
+% %  of duplicates given the length of the hyperplanes)
+% nDuplicates = sum(groupSizeMap(groupSizeMap > 1)-1);
+% % See the maximum amount of points that get mapped to the same box
+% largestBox = max(groupSizeMap);
 
 % Prepare the index map
 cnt = 1;
@@ -118,13 +120,54 @@ for i = 1:nPoints
     groupArray(idx) = i;
     
 end
-    
-
 
 %% Match points2 with points1 using LSH hash table
 
+% Calculating hash codes happens separately from searching,
+% this makes the program easier to parallelize at some later point
 
+% Calculate hash values
+for i = 1:nPoints
+    point = points2(i,:);
+    hashcode = 0;
+    for j = 1:nPlanes
+        hplane = hyperplanes(j,:)';
+        if (point*hplane > 0)
+            hashcode = bitor(hashcode, bitshift(1, j-1));
+        end
+    end
+    hashcode = hashcode+1; % Because matlab is weird with indexing
+    indexGroupMap(i) = hashcode;
+end
 
+% Match the points using lsh
+matching_lsh = zeros(nPoints, 1);
+
+for i = 1:nPoints
+    % Find table and elements in points1 to match with
+    bestMatch = 1e10;
+    hashcode = indexGroupMap(i);
+    size = groupSizeMap(hashcode);
+    startIdx = groupIndexMap(hashcode);
+    
+    % Match the points
+    for j = startIdx:(startIdx+size-1)
+        % Take euclidean distance between the vector
+        idx = groupArray(j);
+        diff = sum((points2(i,:) - points1(idx,:)) .^ 2);
+        % If euclidean distance is better than the best match,
+        % we have a new best match
+        if (diff < bestMatch)
+            bestMatch = diff;
+            match = idx;
+        end
+    end
+    if (bestMatch ~= 1e10)
+        matching_lsh(i) =  match;
+    else
+        matching_lsh(i) = -1;
+    end
+end
 
 
 
