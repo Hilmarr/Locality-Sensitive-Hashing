@@ -59,14 +59,6 @@ groupSizeMap = zeros(nBoxes, 1);
 groupIndexMap = zeros(nBoxes, 1);
 groupIndexMapTails = zeros(nBoxes, 1);
 
-% % temporary storage as a number of linked lists
-% % idx: point, next
-% % next == 0, represents that it is a tail node,
-% % point == 0, represents that there is no point stored there
-% % This works in matlab since indexing starts from 1, in other languages,
-% % these metavalues should be -1 or some other invalid index.
-% groupTable = zeros(nPoints, 2);
-
 % array of points grouped by what box they got hashed into
 groupArray = zeros(nPoints, 1);
 
