@@ -2,7 +2,7 @@
 %% set up the points
 clear all; close all; clc;
 
-nPoints = 100;
+nPoints = 1000;
 vectorLength = 128;
 noiseScale = 0.01;
 points1 = 2*rand(nPoints, vectorLength) - 1;
@@ -18,6 +18,7 @@ for i = 1:nPoints
 end
 
 %% matching using naive comparisons
+naiveMatchingStart = tic;
 
 matching_naive = zeros(nPoints, 1);
 
@@ -36,9 +37,10 @@ for i = 1:nPoints
     end
     matching_naive(i) = match;
 end
-
+naiveMatchingTime = toc(naiveMatchingStart);
 
 %% Contstruct LSH table (one LSH table)
+lshStart = tic;
 
 % Initialize random hyperplanes
 nPlanes = round(log2(nPoints));
@@ -65,6 +67,7 @@ groupArray = zeros(nPoints, 1);
 % - Put points1 into our lsh table -
 
 % Calculate hash values, keep track of sizes of each group
+hashValuesStart1 = tic;
 for i = 1:nPoints
     point = points1(i,:);
     hashcode = 0;
@@ -81,6 +84,7 @@ for i = 1:nPoints
     indexGroupMap(i) = hashcode;
     groupSizeMap(hashcode) = groupSizeMap(hashcode)+1;
 end
+hashValuesTime1 = toc(hashValuesStart1);
 
 % % LATER: count duplicates in indexGroupMap
 % % i.e. the number of points that gets mapped to a box where there already
@@ -121,12 +125,16 @@ for i = 1:nPoints
     
 end
 
+tablesCreatedTime = toc(lshStart);
+
 %% Match points2 with points1 using LSH hash table
+matchingStart = tic;
 
 % Calculating hash codes happens separately from searching,
 % this makes the program easier to parallelize at some later point
 
 % Calculate hash values
+hashValuesStart2 = tic;
 for i = 1:nPoints
     point = points2(i,:);
     hashcode = 0;
@@ -139,6 +147,7 @@ for i = 1:nPoints
     hashcode = hashcode+1; % Because matlab is weird with indexing
     indexGroupMap(i) = hashcode;
 end
+hashValuesTime2 = toc(hashValuesStart2);
 
 % Match the points using lsh
 matching_lsh = zeros(nPoints, 1);
@@ -169,13 +178,32 @@ for i = 1:nPoints
     end
 end
 
+matchingTime = toc(matchingStart);
+lshTime = toc(lshStart);
+hashValuesTime = hashValuesTime1 + hashValuesTime2;
 
 
+% Deal with time
+
+naiveMatchingTime
+tablesCreatedTime
+matchingTime
+lshTime
+hashValuesTime1
+hashValuesTime2
+hashValuesTime
 
 
+wrong = 0;
+for i = 1:nPoints
+    if (matching_lsh(i) ~= matching_naive(i))
+        wrong = wrong + 1;
+    end
+end
+correct = nPoints - wrong;
+correctRatio = correct/nPoints;
 
-
-
+correctRatio
 
 
 
