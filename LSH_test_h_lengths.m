@@ -49,7 +49,7 @@ for curIter = 1:length(maxHPLengthArr)
         hashcode = 0;
         for j = 1:nPlanes
             hplane = hyperplanes(j,:)';
-            if (point*hplane > hyperplaneLengths)
+            if (point*hplane > hyperplaneLengths(j))
                 hashcode = bitor(hashcode, bitshift(1, j-1));
             end
         end
@@ -81,3 +81,4 @@ plot(maxHPLengthArr, largestBoxArr);
 title(sprintf("Number of duplicates as a function of hyperplane length, N = %d", nPoints))
 xlabel("max hyperplane length");
 ylabel("number of duplicates");
+% set(gca, 'XScale', 'log')
