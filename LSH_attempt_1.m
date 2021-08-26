@@ -2,13 +2,14 @@
 %% set up the points
 clear all; close all; clc;
 
-nPoints = 500;
+nPoints = 1000;
 vectorLength = 128;
-noiseScale = 0.01;
+noiseScale = 0.1;
 points1 = 2*rand(nPoints, vectorLength) - 1;
-% Noise generated with uniform random distribution.
-% Might later try it with a normal distribution, but this is good for now.
+% Noise generated from a uniform random distribution.
 noise = (2*rand(nPoints, vectorLength) - 1) * noiseScale;
+% Noise generated from a normal distribution
+% noise = randn(nPoints, vectorLength) * noiseScale;
 points2 = points1 + noise;
 
 % Normalize the vectors so their absolute values are all 1 (l2 norms are 1)
