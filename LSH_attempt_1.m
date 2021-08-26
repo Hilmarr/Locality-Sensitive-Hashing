@@ -164,8 +164,6 @@ for i = 1:nPoints
     end
     if (shortestDist ~= 1e10)
         matching_lsh(i) =  match;
-    else
-        matching_lsh(i) = -1;
     end
 end
 
