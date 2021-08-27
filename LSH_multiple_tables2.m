@@ -40,7 +40,7 @@ for i = 1:nPoints
 end
 naiveMatchingTime = toc(naiveMatchingStart);
 
-%% Contstruct LSH table (one LSH table)
+%% LSH
 lshStart = tic;
 
 nTables = 15;
@@ -61,6 +61,8 @@ groupIndexMapTails = zeros(nBoxes, 1);
 
 for table = 1:nTables
 
+    % -- Construct LSH table --
+    
     % Initialize random hyperplanes
     hyperplanes = 2*rand(nPlanes, vectorLength) - 1;
     
@@ -115,7 +117,7 @@ for table = 1:nTables
     end
 
 
-    %% Match points2 with points1 using LSH hash table
+    % -- Match points2 with points1 using LSH hash table --
 
     % Calculating hash codes happens separately from searching,
     % this makes the program easier to parallelize at some later point

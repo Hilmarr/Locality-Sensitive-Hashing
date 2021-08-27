@@ -2,9 +2,9 @@
 %% set up the points
 clear all; close all; clc;
 
-nPoints = 1000;
+nPoints = 12000;
 vectorLength = 128;
-noiseScale = 0.5;
+noiseScale = 0.1;
 points1 = 2*rand(nPoints, vectorLength) - 1;
 % Noise generated from a uniform random distribution.
 noise = (2*rand(nPoints, vectorLength) - 1) * noiseScale;
@@ -18,44 +18,18 @@ for i = 1:nPoints
     points2(i,:) = points2(i,:) / norm(points2(i,:), 2);
 end
 
-%% matching using naive comparisons
-naiveMatchingStart = tic;
-
-matching_naive = zeros(nPoints, 1);
-
-for i = 1:nPoints
-    bestMatchDist = 1e10;
-    match = -1;
-    for j = 1:nPoints
-        % Take euclidean distance between the vector
-        diff = sum((points1(i,:) - points2(j,:)) .^ 2);
-        % If euclidean distance is better than the best match,
-        % we have a new best match
-        if (diff < bestMatchDist)
-            bestMatchDist = diff;
-            match = j;
-        end
-    end
-    matching_naive(i) = match;
-end
-naiveMatchingTime = toc(naiveMatchingStart);
-
 %% LSH
+
 lshStart = tic;
 
-nTables = 8;
-nPlanes = round(log2(nPoints));
+nTables = 4;
 
 % Store best matches for LSH
 matching_lsh = zeros(nPoints, 1);
 % Store the distance for each best match
 bestMatchDists = zeros(nPoints) + 1e10;
-% Booleans
-%   True if the point was within some tolerance of hyperplane
-%   False otherwise
-closeToHP = zeros(nPoints, nPlanes);
-tol = 1e-3;
-tol = tol*tol;
+
+nPlanes = round(log2(nPoints));
 
 % Initialize LSH tables
 nBoxes = 2^nPlanes;
@@ -66,18 +40,11 @@ groupIndexMapTails = zeros(nBoxes, 1);
 
 for table = 1:nTables
     
-    % -- Construct LSH table --
+    %  -- Contstruct LSH table --
 
     % Initialize random hyperplanes
-    nPlanes = round(log2(nPoints));
     hyperplanes = 2*rand(nPlanes, vectorLength) - 1;
-
-    % Give the hyperplanes the length of somewhere between 0 and maxHPLength
-    % Not needed if all hyperplanes go through the origin
-    for i = 1:nPlanes
-        hyperplanes(i,:) = hyperplanes(i,:) / norm(hyperplanes(i,:), 2);
-    end
-
+    
     % Initialize LSH tables
     indexGroupMap = 0 * indexGroupMap;
     groupSizeMap = 0 * groupSizeMap;
@@ -95,6 +62,9 @@ for table = 1:nTables
         hashcode = 0;
         for j = 1:nPlanes
             hplane = hyperplanes(j,:)';
+    %         if (point*hplane > hplane'*hplane)
+    %             hashcode = bitor(hashcode, bitshift(1, j-1));
+    %         end
             if (point*hplane > 0)
                 hashcode = bitor(hashcode, bitshift(1, j-1));
             end
@@ -126,12 +96,10 @@ for table = 1:nTables
     end
 
 
-    % -- Match points2 with points1 using LSH hash table --
+    % -- Match points2 with points1 using LSH --
 
     % Calculating hash codes happens separately from searching,
     % this makes the program easier to parallelize at some later point
-    
-    closeToHP = 0 * closeToHP;
 
     % Calculate hash values
     hashValuesStart2 = tic;
@@ -140,13 +108,8 @@ for table = 1:nTables
         hashcode = 0;
         for j = 1:nPlanes
             hplane = hyperplanes(j,:)';
-            tmp = point*hplane;
             if (point*hplane > 0)
                 hashcode = bitor(hashcode, bitshift(1, j-1));
-            end
-            closeToHP(i, j) = tmp < tol;
-            if (tmp*tmp < tol) 
-%                 fprintf("tmp*tmp=%f, tol=%f\n", tmp*tmp, tol);
             end
         end
         hashcode = hashcode+1; % Because matlab is weird with indexing
@@ -158,7 +121,6 @@ for table = 1:nTables
         changed = 0;
         bestMatchDist = bestMatchDists(i);
         hashcode = indexGroupMap(i);
-        
         size = groupSizeMap(hashcode);
         startIdx = groupIndexMap(hashcode);
 
@@ -175,26 +137,6 @@ for table = 1:nTables
                 changed = 1;
             end
         end
-        
-        for k = 1:nPlanes
-            if (closeToHP(i, k))
-                hashcode2 = bitxor(hashcode-1, bitshift(1, k-1))+1;
-
-                size = groupSizeMap(hashcode2);
-                startIdx = groupIndexMap(hashcode2);
-
-                for j = startIdx:(startIdx+size-1)
-                    idx = groupArray(j);
-                    diff = sum((points2(i,:) - points1(idx,:)) .^ 2);
-                    if (diff < bestMatchDist)
-                        bestMatchDist = diff;
-                        match = idx;
-                        changed = 1;
-                    end
-                end
-            end
-        end
-        
         if (changed == 1)
             matching_lsh(i) =  match;
             bestMatchDists(i) = bestMatchDist;
@@ -210,7 +152,7 @@ lshTime = toc(lshStart);
 
 wrong = 0;
 for i = 1:nPoints
-    if (matching_lsh(i) ~= matching_naive(i))
+    if (matching_lsh(i) ~= i)
         wrong = wrong + 1;
     end
 end
@@ -219,8 +161,7 @@ correctRatio = correct/nPoints;
 
 
 fprintf("N = %d\n", nPoints);
-fprintf("Matching time using naive method:      %f\n", naiveMatchingTime);
 fprintf("Total matching time using LSH:         %f\n", lshTime);
-fprintf("\n\n");
-fprintf("Time ratio (lsh time / naive time): %f\n", (lshTime/naiveMatchingTime));
 fprintf("LSH correct ratio:                  %f\n", correctRatio);
+
+

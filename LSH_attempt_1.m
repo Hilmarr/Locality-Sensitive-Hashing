@@ -40,7 +40,7 @@ for i = 1:nPoints
 end
 naiveMatchingTime = toc(naiveMatchingStart);
 
-%% Contstruct LSH table (one LSH table)
+%% Construct LSH table (one LSH table)
 lshStart = tic;
 
 % Initialize random hyperplanes
