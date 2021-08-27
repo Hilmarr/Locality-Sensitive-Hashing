@@ -45,30 +45,30 @@ lshStart = tic;
 
 nTables = 15;
 
-% Match the points using lsh
+% Store best matches for LSH
 matching_lsh = zeros(nPoints, 1);
+% Store the distance for each best match
 bestMatchDists = zeros(nPoints) + 1e10;
+
+nPlanes = round(log2(nPoints));
+
+% Initialize LSH tables
+nBoxes = 2^nPlanes;
+indexGroupMap = zeros(nPoints, 1);
+groupSizeMap = zeros(nBoxes, 1);
+groupIndexMap = zeros(nBoxes, 1);
+groupIndexMapTails = zeros(nBoxes, 1);
 
 for table = 1:nTables
 
     % Initialize random hyperplanes
-    nPlanes = round(log2(nPoints));
     hyperplanes = 2*rand(nPlanes, vectorLength) - 1;
-    maxHPLength = 1;
-
-    % % Give the hyperplanes the length of somewhere between 0 and maxHPLength
-    % % Not needed if all hyperplanes go through the origin
-    % for i = 1:nPlanes
-    %     hyperplanes(i,:) = hyperplanes(i,:) ...
-    %         * (maxHPLength * rand(1) / norm(hyperplanes(i,:), 2));
-    % end
-
+    
     % Initialize LSH tables
-    indexGroupMap = zeros(nPoints, 1);
-    nBoxes = 2^nPlanes;
-    groupSizeMap = zeros(nBoxes, 1);
-    groupIndexMap = zeros(nBoxes, 1);
-    groupIndexMapTails = zeros(nBoxes, 1);
+    indexGroupMap = 0 * indexGroupMap;
+    groupSizeMap = 0 * groupSizeMap;
+    groupIndexMap = 0 * groupIndexMap;
+    groupIndexMapTails = 0 * groupIndexMapTails;
 
     % array of points grouped by what box they got hashed into
     groupArray = zeros(nPoints, 1);
