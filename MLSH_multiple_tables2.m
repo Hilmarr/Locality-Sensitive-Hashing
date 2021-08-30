@@ -69,11 +69,9 @@ for table = 1:nTables
     % -- Construct LSH table --
 
     % Initialize random hyperplanes
-    nPlanes = round(log2(nPoints));
     hyperplanes = 2*rand(nPlanes, vectorLength) - 1;
 
-    % Give the hyperplanes the length of somewhere between 0 and maxHPLength
-    % Not needed if all hyperplanes go through the origin
+    % Normalize hyperplanes
     for i = 1:nPlanes
         hyperplanes(i,:) = hyperplanes(i,:) / norm(hyperplanes(i,:), 2);
     end
@@ -141,7 +139,7 @@ for table = 1:nTables
         for j = 1:nPlanes
             hplane = hyperplanes(j,:)';
             tmp = point*hplane;
-            if (point*hplane > 0)
+            if (tmp > 0)
                 hashcode = bitor(hashcode, bitshift(1, j-1));
             end
             closeToHP(i, j) = tmp < tol;
