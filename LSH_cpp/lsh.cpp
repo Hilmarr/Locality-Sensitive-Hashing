@@ -1,5 +1,7 @@
-#include <iostream>
 #include <cmath>
+#include <iostream>
+#include <iterator>
+#include <numeric>
 
 inline double rand_minus1_to_1() {
     return ((double)rand() / (RAND_MAX/2)) - 1;
@@ -60,8 +62,15 @@ int main() {
         groupSizeMap[hashcode]++;     // increment the size of the group
     }
 
-
-    
+    // // find group indices using exclusive scan of the group sizes
+    //  std::exclusive_scan(groupSizeMap, groupSizeMap + nBoxes - 1);
+    // doing it manually for now
+    int cnt = 0;
+    for (int i = 0; i < nBoxes; i++) {
+        groupIndexMap[i] = cnt;
+        groupIndexMapTails[i] = cnt;
+        cnt += groupSizeMap[i];
+    }
 }
 
 void fill_point_arrays(int nPoints, int vectorLength, int noiseScale,
