@@ -27,6 +27,40 @@ int main() {
     double hyperplanes[nPlanes * vectorLength];
     // create normalized hyperplanes represented by vectors of euclidean size 1
     fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
+
+     //  - Arrays to organize groups -
+    const int nBoxes = 1 << nPlanes;
+    int indexGroupMap[nPoints];  // The group that each point falls into
+    int groupSizeMap[nBoxes];    // Amount of points that fall into each group
+    int groupIndexMap[nBoxes];   // The starting index for each group in groupArray
+    int groupIndexMapTails[nBoxes]; // temporary values
+
+    int groupArray[nPoints]; // Actual group
+
+    // - calculate hash values, keep track of sizes of each group -
+    for (int i = 0; i < nPoints; i++) {
+        double* point = &points1[i * vectorLength];
+        int hashcode = 0;  //  hashcode will be the group index
+        // calculate hash value of the i'th point, store resut in indexGroupMap
+        double* hplane = hyperplanes; // first hyperplane
+        for (int j = 0; j < nPlanes; j++) {
+            // calculate point * hplane
+            double vecMul = 0;
+            for (int k = 0; k < vectorLength; k++) {
+                vecMul += point[k]*hplane[k];
+            }
+            // set i'th bit to one if point is on "positive" side of hyperplane
+            if  (vecMul > 0) {
+                hashcode = hashcode | (1 << j);
+            }
+            // next hyperplane
+            hplane += vectorLength;
+        }
+        indexGroupMap[i] = hashcode;  // save the hashcode
+        groupSizeMap[hashcode]++;     // increment the size of the group
+    }
+
+
     
 }
 
