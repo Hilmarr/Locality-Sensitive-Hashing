@@ -32,7 +32,7 @@ int main() {
     const int nPoints2 = nPoints; // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.1;
-    const int numTables = 10;
+    const int numTables = 5;
 
     // points to be matched
     double* points1 = (double*)malloc(nPoints * vectorLength * sizeof(double));
@@ -83,7 +83,7 @@ int main() {
 
         // - Match points -
 
-        calculate_hash_values(nPoints, nPlanes, vectorLength,
+        calculate_hash_values(nPoints2, nPlanes, vectorLength,
                               points2, hyperplanes, indexGroupMap);
 
         lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap,
