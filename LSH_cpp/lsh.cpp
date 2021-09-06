@@ -17,6 +17,11 @@ void calculate_hash_values(int nPoints, int nPlanes, int vectorLength,
                             double* points, double* hyperplanes,
                             int* indexGroupMap);
 
+void organize_points_into_groups(int nPoints, int nBoxes,
+                          int* indexGroupMap, int* groupSizeMap,
+                          int* groupIndexMap, int* groupIndexMapTails,
+                          int* groupArray);
+
 int main() {
     const int nPoints = 1000;     // number of points in the first dataset
     const int nPoints2 = nPoints; // number of points in the second dataset
@@ -57,33 +62,8 @@ int main() {
 
 
     // - Organize points so they can be indexed by their hash values -
-
-    // find the size of each group
-    memset(groupSizeMap, 0, nPoints);
-    for (int i = 0; i < nPoints; i++) {
-        groupSizeMap[indexGroupMap[i]]++;
-    }
-
-    // Find group indices into the group array 'groupArray'
-    // // find group indices using exclusive scan of the group sizes
-    //  std::exclusive_scan(groupSizeMap, groupSizeMap + nBoxes - 1);
-    // doing it manually for now
-    int cnt = 0;
-    for (int i = 0; i < nBoxes; i++) {
-        groupIndexMap[i] = cnt;
-        groupIndexMapTails[i] = cnt;
-        cnt += groupSizeMap[i];
-    }
-
-    // Fill groupArray
-    for (int i = 0; i < nPoints; i++) {
-        // what group did the point get hashed into
-        int hashcode = indexGroupMap[i];
-        // start index of that group in groupArray + number of elements currently inserted
-        int idx = groupIndexMapTails[hashcode]++;
-        // add the point to the group
-        groupArray[idx] = i;
-    }
+    organize_points_into_groups(nPoints, nBoxes, indexGroupMap, groupSizeMap,
+                                groupIndexMap, groupIndexMapTails, groupArray);
 
     // - Match points -
 
@@ -213,5 +193,38 @@ void calculate_hash_values(int nPoints, int nPlanes, int vectorLength,
             hplane += vectorLength;
         }
         indexGroupMap[i] = hashcode;  // save the hashcode
+    }
+}
+
+void organize_points_into_groups(int nPoints, int nBoxes,
+                          int* indexGroupMap, int* groupSizeMap,
+                          int* groupIndexMap, int* groupIndexMapTails,
+                          int* groupArray)
+{
+    // find the size of each group
+    memset(groupSizeMap, 0, nPoints);
+    for (int i = 0; i < nPoints; i++) {
+        groupSizeMap[indexGroupMap[i]]++;
+    }
+
+    // Find group indices into the group array 'groupArray'
+    // // find group indices using exclusive scan of the group sizes
+    //  std::exclusive_scan(groupSizeMap, groupSizeMap + nBoxes - 1);
+    // doing it manually for now
+    int cnt = 0;
+    for (int i = 0; i < nBoxes; i++) {
+        groupIndexMap[i] = cnt;
+        groupIndexMapTails[i] = cnt;
+        cnt += groupSizeMap[i];
+    }
+
+    // Fill groupArray
+    for (int i = 0; i < nPoints; i++) {
+        // what group did the point get hashed into
+        int hashcode = indexGroupMap[i];
+        // start index of that group in groupArray + number of elements currently inserted
+        int idx = groupIndexMapTails[hashcode]++;
+        // add the point to the group
+        groupArray[idx] = i;
     }
 }
