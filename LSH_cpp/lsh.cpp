@@ -22,6 +22,12 @@ void organize_points_into_groups(int nPoints, int nBoxes,
                           int* groupIndexMap, int* groupIndexMapTails,
                           int* groupArray);
 
+void lsh_match_points(int nPoints, int* indexGroupMap, int* groupSizeMap, int* groupIndexMap, int* lshMatches);
+
+void lsh_match_points(int nPoints2, int vectorLength, double* points1,
+                      double* points2, int* indexGroupMap, int* groupSizeMap,
+                      int* groupIndexMap, int* groupArray, int* lshMatches);
+
 int main() {
     const int nPoints = 1000;     // number of points in the first dataset
     const int nPoints2 = nPoints; // number of points in the second dataset
@@ -70,37 +76,11 @@ int main() {
     calculate_hash_values(nPoints, nPlanes, vectorLength,
                           points2, hyperplanes, indexGroupMap);
 
-    // then search
-    for (int i = 0; i < nPoints2; i++) {
-        // Find the group of elements from groupArray to match with
-        double bestFitDist = 1e10;
-        int match = -1;
-        int hashcode = indexGroupMap[i];
-        int size = groupSizeMap[hashcode];
-        int startIdx = groupIndexMap[hashcode];
-
-        // Match the points
-        for (int j = startIdx; j < startIdx + size; j++) {
-            int idx = groupArray[j];
-            // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
-            double diff = 0;
-            for (int k = 0; k < vectorLength; k++) {
-                double tmp = points2[i*vectorLength + k] - points1[idx*vectorLength + k];
-                diff += tmp*tmp;
-            }
-            // check if distance is the lowest distance so far
-            if (diff < bestFitDist) {
-                // printf("bestFitDist=%.3f   diff=%.3f   match=%d", bestFitDist, diff, match);
-                bestFitDist = diff;
-                match = idx;
-            }
-        }
-
-        lshMatches[i] = match;
-    }
+    lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap,
+                     groupSizeMap, groupIndexMap, groupArray, lshMatches);
 
 
-    // Check how many matches were correct
+    // - Check how many matches were correct -
     int correct = 0;
     for (int i = 0; i < nPoints2; i++) {
         correct += lshMatches[i] == i;
@@ -226,5 +206,38 @@ void organize_points_into_groups(int nPoints, int nBoxes,
         int idx = groupIndexMapTails[hashcode]++;
         // add the point to the group
         groupArray[idx] = i;
+    }
+}
+
+void lsh_match_points(int nPoints2, int vectorLength, double* points1,
+                      double* points2, int* indexGroupMap, int* groupSizeMap,
+                      int* groupIndexMap, int* groupArray, int* lshMatches)
+{
+    for (int i = 0; i < nPoints2; i++) {
+        // Find the group of elements from groupArray to match with
+        double bestFitDist = 1e10;
+        int match = -1;
+        int hashcode = indexGroupMap[i];
+        int size = groupSizeMap[hashcode];
+        int startIdx = groupIndexMap[hashcode];
+
+        // Match the points
+        for (int j = startIdx; j < startIdx + size; j++) {
+            int idx = groupArray[j];
+            // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
+            double diff = 0;
+            for (int k = 0; k < vectorLength; k++) {
+                double tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
+                diff += tmp * tmp;
+            }
+            // check if distance is the lowest distance so far
+            if (diff < bestFitDist) {
+                // printf("bestFitDist=%.3f   diff=%.3f   match=%d", bestFitDist, diff, match);
+                bestFitDist = diff;
+                match = idx;
+            }
+        }
+
+        lshMatches[i] = match;
     }
 }
