@@ -156,10 +156,10 @@ for table = 1:nTables
             if (closeToHP(i, k))
                 hashcode2 = bitxor(hashcode-1, bitshift(1, k-1))+1;
 
-                size = groupSizeMap(hashcode2);
-                startIdx = groupIndexMap(hashcode2);
+                size2 = groupSizeMap(hashcode2);
+                startIdx2 = groupIndexMap(hashcode2);
 
-                for j = startIdx:(startIdx+size-1)
+                for j = startIdx2:(startIdx2+size2-1)
                     idx = groupArray(j);
                     diff = sum((points2(i,:) - points1(idx,:)) .^ 2);
                     if (diff < bestMatchDist)
