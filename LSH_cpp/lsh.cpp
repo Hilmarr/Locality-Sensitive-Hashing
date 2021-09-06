@@ -18,6 +18,8 @@ int main() {
     const float noiseScale = 0.1;
 
     // points to be matched
+    // LATER: because of their massive size arrays should be dynamically
+    //        allocated using 'malloc'
     double points1[nPoints * vectorLength];
     double points2[nPoints * vectorLength];
 
@@ -30,16 +32,20 @@ int main() {
     // create normalized hyperplanes represented by vectors of euclidean size 1
     fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
 
-     //  - Arrays to organize groups -
+    //  - Arrays to organize groups -
+    // LATER: The arrays that whose elements need to
+    //        be set to zero are only 'groupSizeMap'
     const int nBoxes = 1 << nPlanes;
     int indexGroupMap[nPoints];  // The group that each point falls into
     int groupSizeMap[nBoxes];    // Amount of points that fall into each group
     int groupIndexMap[nBoxes];   // The starting index for each group in groupArray
     int groupIndexMapTails[nBoxes]; // temporary values
 
+    // LATER: changed this to contain actual points instead of indices,
+    //        that should be better for performance
     int groupArray[nPoints]; // Actual group
 
-    // - calculate hash values, keep track of sizes of each group -
+    // - Calculate hash values, keep track of sizes of each group -
     for (int i = 0; i < nPoints; i++) {
         double* point = &points1[i * vectorLength];
         int hashcode = 0;  //  hashcode will be the group index
@@ -62,6 +68,9 @@ int main() {
         groupSizeMap[hashcode]++;     // increment the size of the group
     }
 
+    // - Organize points so they can be indexed by their hash values -
+
+    // Find group indices into the group array 'groupArray'
     // // find group indices using exclusive scan of the group sizes
     //  std::exclusive_scan(groupSizeMap, groupSizeMap + nBoxes - 1);
     // doing it manually for now
@@ -70,6 +79,16 @@ int main() {
         groupIndexMap[i] = cnt;
         groupIndexMapTails[i] = cnt;
         cnt += groupSizeMap[i];
+    }
+
+    // Fill groupArray
+    for (int i = 0; i < nPoints; i++) {
+        // what group did the point get hashed into
+        int hashcode = indexGroupMap[i];
+        // start index of that group in groupArray + number of elements currently inserted
+        int idx = groupIndexMapTails[hashcode]++;
+        // add the point to the group
+        groupArray[idx] = i;
     }
 }
 
