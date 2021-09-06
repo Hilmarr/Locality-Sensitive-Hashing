@@ -22,11 +22,10 @@ void organize_points_into_groups(int nPoints, int nBoxes,
                           int* groupIndexMap, int* groupIndexMapTails,
                           int* groupArray);
 
-void lsh_match_points(int nPoints, int* indexGroupMap, int* groupSizeMap, int* groupIndexMap, int* lshMatches);
-
 void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                       double* points2, int* indexGroupMap, int* groupSizeMap,
-                      int* groupIndexMap, int* groupArray, int* lshMatches);
+                      int* groupIndexMap, int* groupArray, int* lshMatches,
+                      double* bestMatchDists);
 
 int main() {
     const int nPoints = 1000;     // number of points in the first dataset
@@ -44,8 +43,6 @@ int main() {
 
     // allocate hyperplanes
     double* hyperplanes = (double*)malloc(nPlanes * vectorLength * sizeof(double));
-    // create normalized hyperplanes represented by vectors of euclidean size 1
-    fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
 
     //  - Arrays to organize groups -
     const int nBoxes = 1 << nPlanes;
@@ -65,10 +62,18 @@ int main() {
     int* groupArray = (int*)malloc(nPoints * sizeof(int));
     // holds the actual matches
     int* lshMatches = (int*)malloc(nPoints2 * sizeof(int));
+    memset(lshMatches, -1, nPoints2 * sizeof(int));
+    // holds the best match for each point we're finding a match for
+    double* bestMatchDists = (double*)malloc(nPoints2 * sizeof(double));
+    for (int i = 0; i < nPoints2; i++) {
+        bestMatchDists[i] = 1e10;
+    }
+
+    // create normalized hyperplanes represented by vectors of euclidean size 1
+    fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
 
     calculate_hash_values(nPoints, nPlanes, vectorLength,
                           points1, hyperplanes, indexGroupMap);
-
 
     // - Organize points so they can be indexed by their hash values -
     organize_points_into_groups(nPoints, nBoxes, indexGroupMap, groupSizeMap,
@@ -80,8 +85,8 @@ int main() {
                           points2, hyperplanes, indexGroupMap);
 
     lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap,
-                     groupSizeMap, groupIndexMap, groupArray, lshMatches);
-
+                     groupSizeMap, groupIndexMap, groupArray,
+                     lshMatches, bestMatchDists);
 
     // - Check how many matches were correct -
     int correct = 0;
@@ -91,15 +96,17 @@ int main() {
     double  correctRatio = ((double) correct) / nPoints2;
     printf("Correct ratio: %f\n", correctRatio);
 
-
     free(points1);
     free(points2);
+    free(hyperplanes);
 
     free(indexGroupMap);
     free(groupSizeMap);
     free(groupIndexMap);
     free(groupIndexMapTails);
-
+    free(groupArray);
+    free(lshMatches);
+    free(bestMatchDists);
 }
 
 void fill_point_arrays(int nPoints, int vectorLength, double noiseScale,
@@ -214,11 +221,13 @@ void organize_points_into_groups(int nPoints, int nBoxes,
 
 void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                       double* points2, int* indexGroupMap, int* groupSizeMap,
-                      int* groupIndexMap, int* groupArray, int* lshMatches)
+                      int* groupIndexMap, int* groupArray, int* lshMatches,
+                      double* bestMatchDists)
 {
     for (int i = 0; i < nPoints2; i++) {
         // Find the group of elements from groupArray to match with
-        double bestFitDist = 1e10;
+        bool changed = false;
+        double bestFitDist = bestMatchDists[i];
         int match = -1;
         int hashcode = indexGroupMap[i];
         int size = groupSizeMap[hashcode];
@@ -238,9 +247,13 @@ void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                 // printf("bestFitDist=%.3f   diff=%.3f   match=%d", bestFitDist, diff, match);
                 bestFitDist = diff;
                 match = idx;
+                changed = true;
             }
         }
 
-        lshMatches[i] = match;
+        if (changed) {
+            lshMatches[i] = match;
+            bestMatchDists[i] = bestFitDist;
+        }
     }
 }
