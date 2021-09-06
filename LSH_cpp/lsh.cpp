@@ -8,7 +8,7 @@ inline double rand_minus1_to_1() {
     return ((double)rand() / (RAND_MAX/2)) - 1;
 }
 
-void fill_point_arrays(int nPoints, int vectorLength, double noiseScale,
+void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, double noiseScale,
                        double* points1, double* points2);
 
 void fill_hyperplanes(int nPlanes, int vectorLength, double* hyperplanes);
@@ -28,19 +28,19 @@ void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                       double* bestMatchDists);
 
 int main() {
-    const int nPoints = 10000;     // number of points in the first dataset
-    const int nPoints2 = nPoints; // number of points in the second dataset
+    const int nPoints = 1000;     // number of points in the first dataset
+    const int nPoints2 = 1000; // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.3;
     const int numTables = 8;
 
     // points to be matched
     double* points1 = (double*)malloc(nPoints * vectorLength * sizeof(double));
-    double* points2 = (double*)malloc(nPoints * vectorLength * sizeof(double));
+    double* points2 = (double*)malloc(nPoints2 * vectorLength * sizeof(double));
 
     const int nPlanes = (int)log2(nPoints);
 
-    fill_point_arrays(nPoints, vectorLength, noiseScale, points1, points2);
+    fill_point_arrays(nPoints, nPoints2, vectorLength, noiseScale, points1, points2);
 
     // allocate hyperplanes
     double* hyperplanes = (double*)malloc(nPlanes * vectorLength * sizeof(double));
@@ -112,10 +112,10 @@ int main() {
     free(bestMatchDists);
 }
 
-void fill_point_arrays(int nPoints, int vectorLength, double noiseScale,
+void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, double noiseScale,
                        double* points1, double* points2)
 {
-    for (int i = 0; i < nPoints; i++) {
+    for (int i = 0; i < ((nPoints1 < nPoints2) ? nPoints1 : nPoints2); i++) {
         double size1 = 0;
         double size2 = 0;
         for (int j = 0; j < vectorLength; j++) {
