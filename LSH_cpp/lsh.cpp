@@ -13,6 +13,10 @@ void fill_point_arrays(int nPoints, int vectorLength, double noiseScale,
 
 void fill_hyperplanes(int nPlanes, int vectorLength, double* hyperplanes);
 
+void calculate_hash_values(int nPoints, int nPlanes, int vectorLength,
+                            double* points, double* hyperplanes,
+                            int* indexGroupMap);
+
 int main() {
     const int nPoints = 1000;     // number of points in the first dataset
     const int nPoints2 = nPoints; // number of points in the second dataset
@@ -48,27 +52,8 @@ int main() {
     // holds the actual matches
     int* lshMatches = (int*)malloc(nPoints2 * vectorLength * sizeof(int));
 
-    // - Calculate hash values, keep track of sizes of each group -
-    for (int i = 0; i < nPoints; i++) {
-        double* point = &points1[i * vectorLength];
-        int hashcode = 0;  //  hashcode will be the group index
-        // calculate hash value of the i'th point, store resut in indexGroupMap
-        double* hplane = hyperplanes; // first hyperplane
-        for (int j = 0; j < nPlanes; j++) {
-            // calculate point * hplane
-            double vecMul = 0;
-            for (int k = 0; k < vectorLength; k++) {
-                vecMul += point[k]*hplane[k];
-            }
-            // set i'th bit to one if point is on "positive" side of hyperplane
-            if  (vecMul > 0) {
-                hashcode = hashcode | (1 << j);
-            }
-            // next hyperplane
-            hplane += vectorLength;
-        }
-        indexGroupMap[i] = hashcode;  // save the hashcode
-    }
+    calculate_hash_values(nPoints, nPlanes, vectorLength,
+                          points1, hyperplanes, indexGroupMap);
 
 
     // - Organize points so they can be indexed by their hash values -
@@ -102,27 +87,8 @@ int main() {
 
     // - Match points -
 
-    // first calculate hash values (overwriting values in indexGroupMap)
-    for (int i = 0; i < nPoints2; i++) {
-        double* point = &points2[i * vectorLength];
-        int hashcode = 0;  //  hashcode will be the group index
-        // calculate hash value of the i'th point, store resut in indexGroupMap
-        double* hplane = hyperplanes;  // first hyperplane
-        for (int j = 0; j < nPlanes; j++) {
-            // calculate point * hplane
-            double vecMul = 0;
-            for (int k = 0; k < vectorLength; k++) {
-                vecMul += point[k] * hplane[k];
-            }
-            // set i'th bit to one if point is on "positive" side of hyperplane
-            if (vecMul > 0) {
-                hashcode = hashcode | (1 << j);
-            }
-            // next hyperplane
-            hplane += vectorLength;
-        }
-        indexGroupMap[i] = hashcode;  // save the hashcode
-    }
+    calculate_hash_values(nPoints, nPlanes, vectorLength,
+                          points2, hyperplanes, indexGroupMap);
 
     // then search
     for (int i = 0; i < nPoints2; i++) {
@@ -220,5 +186,32 @@ void fill_hyperplanes(int nPlanes, int vectorLength, double* hyperplanes) {
         for (int j = 0; j < vectorLength; j++) {
             hyperplanes[i * vectorLength + j] *= invsize;
         }
+    }
+}
+
+void calculate_hash_values(int nPoints, int nPlanes, int vectorLength,
+                           double* points, double* hyperplanes,
+                           int* indexGroupMap)
+{
+    // - Calculate hash values, keep track of sizes of each group -
+    for (int i = 0; i < nPoints; i++) {
+        double* point = &points[i * vectorLength];
+        int hashcode = 0;  //  hashcode will be the group index
+        // calculate hash value of the i'th point, store resut in indexGroupMap
+        double* hplane = hyperplanes;  // first hyperplane
+        for (int j = 0; j < nPlanes; j++) {
+            // calculate point * hplane
+            double vecMul = 0;
+            for (int k = 0; k < vectorLength; k++) {
+                vecMul += point[k] * hplane[k];
+            }
+            // set i'th bit to one if point is on "positive" side of hyperplane
+            if (vecMul > 0) {
+                hashcode = hashcode | (1 << j);
+            }
+            // next hyperplane
+            hplane += vectorLength;
+        }
+        indexGroupMap[i] = hashcode;  // save the hashcode
     }
 }
