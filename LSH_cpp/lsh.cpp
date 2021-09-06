@@ -33,8 +33,6 @@ int main() {
     fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
 
     //  - Arrays to organize groups -
-    // LATER: The arrays that whose elements need to
-    //        be set to zero are only 'groupSizeMap'
     const int nBoxes = 1 << nPlanes;
     // the group that each point falls into
     int* indexGroupMap = (int*)malloc(((nPoints > nPoints2) ? nPoints : nPoints2) * sizeof(int));
@@ -49,8 +47,6 @@ int main() {
     int* groupArray = (int*)malloc(nPoints * vectorLength * sizeof(int));
     // holds the actual matches
     int* lshMatches = (int*)malloc(nPoints2 * vectorLength * sizeof(int));
-
-    memset(groupSizeMap, 0, nPoints);
 
     // - Calculate hash values, keep track of sizes of each group -
     for (int i = 0; i < nPoints; i++) {
@@ -72,10 +68,16 @@ int main() {
             hplane += vectorLength;
         }
         indexGroupMap[i] = hashcode;  // save the hashcode
-        groupSizeMap[hashcode]++;     // increment the size of the group
     }
 
+
     // - Organize points so they can be indexed by their hash values -
+
+    // find the size of each group
+    memset(groupSizeMap, 0, nPoints);
+    for (int i = 0; i < nPoints; i++) {
+        groupSizeMap[indexGroupMap[i]]++;
+    }
 
     // Find group indices into the group array 'groupArray'
     // // find group indices using exclusive scan of the group sizes
