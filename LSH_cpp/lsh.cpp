@@ -32,7 +32,7 @@ int main() {
     const int nPoints2 = nPoints; // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.1;
-    const int numTables = 5;
+    const int numTables = 10;
 
     // points to be matched
     double* points1 = (double*)malloc(nPoints * vectorLength * sizeof(double));
