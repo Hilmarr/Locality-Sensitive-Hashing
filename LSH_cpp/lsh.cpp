@@ -51,12 +51,15 @@ int main() {
     const int nBoxes = 1 << nPlanes;
     // the group that each point falls into
     int* indexGroupMap = (int*)malloc(((nPoints > nPoints2) ? nPoints : nPoints2) * sizeof(int));
+
+    // in case we're changing sizes
+    #define GROUP_X_MAP_SIZE nBoxes * sizeof(int)
     // amount of points that fall into each group
-    int* groupSizeMap = (int*)malloc(nBoxes * sizeof(int));
+    int* groupSizeMap = (int*)malloc(GROUP_X_MAP_SIZE);
     // the starting index for each group in groupArray
-    int* groupIndexMap = (int*)malloc(nBoxes * sizeof(int));
+    int* groupIndexMap = (int*)malloc(GROUP_X_MAP_SIZE);
     // temporary values
-    int* groupIndexMapTails = (int*)malloc(nBoxes * sizeof(int));
+    int* groupIndexMapTails = (int*)malloc(GROUP_X_MAP_SIZE);
 
     // Actual groups
     int* groupArray = (int*)malloc(nPoints * sizeof(int));
@@ -182,7 +185,7 @@ void organize_points_into_groups(int nPoints, int nBoxes,
                           int* groupArray)
 {
     // find the size of each group
-    memset(groupSizeMap, 0, nPoints);
+    memset(groupSizeMap, 0, GROUP_X_MAP_SIZE);
     for (int i = 0; i < nPoints; i++) {
         groupSizeMap[indexGroupMap[i]]++;
     }
