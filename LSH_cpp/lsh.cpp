@@ -43,7 +43,7 @@ int main() {
     fill_point_arrays(nPoints, vectorLength, noiseScale, points1, points2);
 
     // allocate hyperplanes
-    double hyperplanes[nPlanes * vectorLength];
+    double* hyperplanes = (double*)malloc(nPlanes * vectorLength * sizeof(double));
     // create normalized hyperplanes represented by vectors of euclidean size 1
     fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
 
@@ -59,9 +59,9 @@ int main() {
     int* groupIndexMapTails = (int*)malloc(nBoxes * sizeof(int));
 
     // Actual groups
-    int* groupArray = (int*)malloc(nPoints * vectorLength * sizeof(int));
+    int* groupArray = (int*)malloc(nPoints * sizeof(int));
     // holds the actual matches
-    int* lshMatches = (int*)malloc(nPoints2 * vectorLength * sizeof(int));
+    int* lshMatches = (int*)malloc(nPoints2 * sizeof(int));
 
     calculate_hash_values(nPoints, nPlanes, vectorLength,
                           points1, hyperplanes, indexGroupMap);
