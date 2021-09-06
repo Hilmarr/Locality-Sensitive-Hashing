@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iterator>
 #include <numeric>
+#include <cstring>
 
 inline double rand_minus1_to_1() {
     return ((double)rand() / (RAND_MAX/2)) - 1;
@@ -19,10 +20,8 @@ int main() {
     const double noiseScale = 0.1;
 
     // points to be matched
-    // LATER: because of their massive size arrays should be dynamically
-    //        allocated using 'malloc'
-    double points1[nPoints * vectorLength];
-    double points2[nPoints2 * vectorLength];
+    double* points1 = (double*)malloc(nPoints * vectorLength * sizeof(double));
+    double* points2 = (double*)malloc(nPoints * vectorLength * sizeof(double));
 
     const int nPlanes = (int)log2(nPoints);
 
@@ -37,13 +36,21 @@ int main() {
     // LATER: The arrays that whose elements need to
     //        be set to zero are only 'groupSizeMap'
     const int nBoxes = 1 << nPlanes;
-    int indexGroupMap[nPoints];  // The group that each point falls into
-    int groupSizeMap[nBoxes];    // Amount of points that fall into each group
-    int groupIndexMap[nBoxes];   // The starting index for each group in groupArray
-    int groupIndexMapTails[nBoxes]; // temporary values
+    // the group that each point falls into
+    int* indexGroupMap = (int*)malloc(((nPoints > nPoints2) ? nPoints : nPoints2) * sizeof(int));
+    // amount of points that fall into each group
+    int* groupSizeMap = (int*)malloc(nBoxes * sizeof(int));
+    // the starting index for each group in groupArray
+    int* groupIndexMap = (int*)malloc(nBoxes * sizeof(int));
+    // temporary values
+    int* groupIndexMapTails = (int*)malloc(nBoxes * sizeof(int));
 
-    int groupArray[nPoints]; // Actual group
-    int lshMatches[nPoints2]; // holds the actual matches
+    // Actual groups
+    int* groupArray = (int*)malloc(nPoints * vectorLength * sizeof(int));
+    // holds the actual matches
+    int* lshMatches = (int*)malloc(nPoints2 * vectorLength * sizeof(int));
+
+    memset(groupSizeMap, 0, nPoints);
 
     // - Calculate hash values, keep track of sizes of each group -
     for (int i = 0; i < nPoints; i++) {
@@ -153,9 +160,15 @@ int main() {
     double  correctRatio = ((double) correct) / nPoints2;
     printf("Correct ratio: %f\n", correctRatio);
 
-    // for (int i = 0; i < nPoints2; i++) {
-    //     printf("%d\n", lshMatches[i]);
-    // }
+
+    free(points1);
+    free(points2);
+
+    free(indexGroupMap);
+    free(groupSizeMap);
+    free(groupIndexMap);
+    free(groupIndexMapTails);
+
 }
 
 void fill_point_arrays(int nPoints, int vectorLength, double noiseScale,
