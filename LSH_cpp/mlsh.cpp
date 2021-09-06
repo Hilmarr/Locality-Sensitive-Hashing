@@ -23,16 +23,18 @@ void organize_points_into_groups(int nPoints, int nBoxes,
                           int* groupArray);
 
 void lsh_match_points(int nPoints2, int vectorLength, double* points1,
-                      double* points2, int* indexGroupMap, int* groupSizeMap,
+                      double* points2, int nPlanes, double* hyperplanes,
+                      int* indexGroupMap, int* groupSizeMap,
                       int* groupIndexMap, int* groupArray, int* lshMatches,
-                      double* bestMatchDists);
+                      double* bestMatchDists, bool* closeToHP);
 
 int main() {
     const int nPoints = 10000;     // number of points in the first dataset
     const int nPoints2 = nPoints; // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.3;
-    const int numTables = 8;
+    const int numTables = 4;
+    #define TOL 1e-2;
 
     // points to be matched
     double* points1 = (double*)malloc(nPoints * vectorLength * sizeof(double));
@@ -70,6 +72,8 @@ int main() {
         bestMatchDists[i] = 1e10;
     }
 
+    bool* closeToHP = (bool*) malloc(nPoints2 * nPlanes * sizeof(bool));
+
     for (int table = 0; table < numTables; table++) {
         // create normalized hyperplanes represented by vectors of euclidean size 1
         fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
@@ -83,12 +87,10 @@ int main() {
 
         // - Match points -
 
-        calculate_hash_values(nPoints2, nPlanes, vectorLength,
-                              points2, hyperplanes, indexGroupMap);
-
-        lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap,
+        lsh_match_points(nPoints2, vectorLength, points1, points2,
+                         nPlanes, hyperplanes, indexGroupMap,
                          groupSizeMap, groupIndexMap, groupArray,
-                         lshMatches, bestMatchDists);
+                         lshMatches, bestMatchDists, closeToHP);
     }
 
     // - Check how many matches were correct -
@@ -223,10 +225,36 @@ void organize_points_into_groups(int nPoints, int nBoxes,
 }
 
 void lsh_match_points(int nPoints2, int vectorLength, double* points1,
-                      double* points2, int* indexGroupMap, int* groupSizeMap,
+                      double* points2, int nPlanes, double* hyperplanes,
+                      int* indexGroupMap, int* groupSizeMap,
                       int* groupIndexMap, int* groupArray, int* lshMatches,
-                      double* bestMatchDists)
+                      double* bestMatchDists, bool* closeToHP)
 {
+    memset(closeToHP, 0, nPoints2 * nPlanes * sizeof(bool));
+
+    // - Calculate hash values, keep track of sizes of each group -
+    for (int i = 0; i < nPoints2; i++) {
+        double* point = &points2[i * vectorLength];
+        int hashcode = 0;  //  hashcode will be the group index
+        // calculate hash value of the i'th point, store resut in indexGroupMap
+        double* hplane = hyperplanes;  // first hyperplane
+        for (int j = 0; j < nPlanes; j++) {
+            // calculate point * hplane
+            double vecMul = 0;
+            for (int k = 0; k < vectorLength; k++) {
+                vecMul += point[k] * hplane[k];
+            }
+            // set i'th bit to one if point is on "positive" side of hyperplane
+            if (vecMul > 0) {
+                hashcode = hashcode | (1 << j);
+            }
+            closeToHP[i*nPlanes + j] = vecMul < TOL;
+            // next hyperplane
+            hplane += vectorLength;
+        }
+        indexGroupMap[i] = hashcode;  // save the hashcode
+    }
+
     for (int i = 0; i < nPoints2; i++) {
         // Find the group of elements from groupArray to match with
         bool changed = false;
@@ -251,6 +279,33 @@ void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                 bestFitDist = diff;
                 match = idx;
                 changed = true;
+            }
+        }
+
+        for (int x = 0; x < nPlanes; x++) {
+            if (closeToHP[i, x]) {
+                int hashcode2 = hashcode ^ (1 << x);
+
+                int size2 = groupSizeMap[hashcode2];
+                int startIdx2 = groupIndexMap[hashcode2];
+
+                // Match the points
+                for (int j = startIdx2; j < startIdx2 + size2; j++) {
+                    int idx = groupArray[j];
+                    // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
+                    double diff = 0;
+                    for (int k = 0; k < vectorLength; k++) {
+                        double tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
+                        diff += tmp * tmp;
+                    }
+                    // check if distance is the lowest distance so far
+                    if (diff < bestFitDist) {
+                        // printf("bestFitDist=%.3f   diff=%.3f   match=%d", bestFitDist, diff, match);
+                        bestFitDist = diff;
+                        match = idx;
+                        changed = true;
+                    }
+                }
             }
         }
 
