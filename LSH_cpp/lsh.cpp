@@ -28,10 +28,11 @@ void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                       double* bestMatchDists);
 
 int main() {
-    const int nPoints = 1000;     // number of points in the first dataset
+    const int nPoints = 10000;     // number of points in the first dataset
     const int nPoints2 = nPoints; // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.1;
+    const int numTables = 5;
 
     // points to be matched
     double* points1 = (double*)malloc(nPoints * vectorLength * sizeof(double));
@@ -69,24 +70,26 @@ int main() {
         bestMatchDists[i] = 1e10;
     }
 
-    // create normalized hyperplanes represented by vectors of euclidean size 1
-    fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
+    for (int table = 0; table < numTables; table++) {
+        // create normalized hyperplanes represented by vectors of euclidean size 1
+        fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
 
-    calculate_hash_values(nPoints, nPlanes, vectorLength,
-                          points1, hyperplanes, indexGroupMap);
+        calculate_hash_values(nPoints, nPlanes, vectorLength,
+                              points1, hyperplanes, indexGroupMap);
 
-    // - Organize points so they can be indexed by their hash values -
-    organize_points_into_groups(nPoints, nBoxes, indexGroupMap, groupSizeMap,
-                                groupIndexMap, groupIndexMapTails, groupArray);
+        // - Organize points so they can be indexed by their hash values -
+        organize_points_into_groups(nPoints, nBoxes, indexGroupMap, groupSizeMap,
+                                    groupIndexMap, groupIndexMapTails, groupArray);
 
-    // - Match points -
+        // - Match points -
 
-    calculate_hash_values(nPoints, nPlanes, vectorLength,
-                          points2, hyperplanes, indexGroupMap);
+        calculate_hash_values(nPoints, nPlanes, vectorLength,
+                              points2, hyperplanes, indexGroupMap);
 
-    lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap,
-                     groupSizeMap, groupIndexMap, groupArray,
-                     lshMatches, bestMatchDists);
+        lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap,
+                         groupSizeMap, groupIndexMap, groupArray,
+                         lshMatches, bestMatchDists);
+    }
 
     // - Check how many matches were correct -
     int correct = 0;
