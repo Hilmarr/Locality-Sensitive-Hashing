@@ -4,6 +4,12 @@
 #include <numeric>
 #include <cstring>
 
+#define TIME_LSH
+
+#ifdef TIME_LSH
+#include <sys/time.h>
+#endif
+
 inline double rand_minus1_to_1() {
     return ((double)rand() / (RAND_MAX/2)) - 1;
 }
@@ -49,11 +55,15 @@ int double_int_arr_size(int** arr, int curSize) {
 }
 
 int main() {
-    const int nPoints = 10000;     // number of points in the first dataset
+    const int nPoints = 40000;     // number of points in the first dataset
     const int nPoints2 = nPoints;  // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.3;
-    const int numTables = 8;
+    const int numTables = 14;
+
+    struct timeval time;
+    long startTime;
+    long endTime;
 
     // points to be matched
     double* points1 = (double*)malloc(numTables * nPoints * vectorLength * sizeof(double));
@@ -99,6 +109,12 @@ int main() {
         bestMatchDists[i] = 1e10;
     }
 
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
+    // prev = time(NULL);
     for (int table = 0; table < numTables; table++) {
         double* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
         int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
@@ -123,6 +139,13 @@ int main() {
                               points2, hyperplanes2, indexGroupMap2);
     }
 
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("Filling hyperplanes, calculating hash values, organizing points into groups:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+#endif
+
     int* checkedArr = (int*) malloc(nPoints * sizeof(int));
     memset(checkedArr, -1, nPoints * sizeof(int));
     int totalMatchCount = 0;
@@ -130,6 +153,11 @@ int main() {
     int* potentialMatches = (int*) malloc(potentialMatchesMaxLen * sizeof(int));
     int* potentialMatchesIndices = (int*) malloc(nPoints2 * sizeof(int));
     int* potentialMatchesLengths = (int*) malloc(nPoints2 * sizeof(int));
+
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
     // find possible matches
     for (int i = 0; i < nPoints2; i++) {
@@ -168,20 +196,26 @@ int main() {
         potentialMatchesLengths[i] = totalMatchCount - potentialMatchesIndices[i];
     }
 
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("Finding potential matches\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime)/1000);
+
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
     match_points(nPoints2, vectorLength, points1, points2,
                 potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
                 lshMatches, bestMatchDists);
 
-    // for (int table = 0; table < numTables; table++) {
-    //     int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
-    //     int* groupSizeMap2 = groupSizeMap + table * groupMapTableLen;
-    //     int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
-    //     int* groupArray2 = groupArray + table * groupArrayTableLen;
-
-    //     lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap2,
-    //                      groupSizeMap2, groupIndexMap2, groupArray2,
-    //                      lshMatches, bestMatchDists);
-    // }
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("Matching potential matches\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+#endif
 
     // - Check how many matches were correct -
     int correct = 0;
