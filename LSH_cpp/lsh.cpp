@@ -1,11 +1,11 @@
 #include <cmath>
+#include <cstring>
 #include <iostream>
 #include <iterator>
 #include <numeric>
-#include <cstring>
 
 inline double rand_minus1_to_1() {
-    return ((double)rand() / (RAND_MAX/2)) - 1;
+    return ((double)rand() / (RAND_MAX / 2)) - 1;
 }
 
 void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, double noiseScale,
@@ -14,13 +14,13 @@ void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, double nois
 void fill_hyperplanes(int nPlanes, int vectorLength, double* hyperplanes);
 
 void calculate_hash_values(int nPoints, int nPlanes, int vectorLength,
-                            double* points, double* hyperplanes,
-                            int* indexGroupMap);
+                           double* points, double* hyperplanes,
+                           int* indexGroupMap);
 
 void organize_points_into_groups(int nPoints, int nBoxes,
-                          int* indexGroupMap, int* groupSizeMap,
-                          int* groupIndexMap, int* groupIndexMapTails,
-                          int* groupArray);
+                                 int* indexGroupMap, int* groupSizeMap,
+                                 int* groupIndexMap, int* groupIndexMapTails,
+                                 int* groupArray);
 
 void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                       double* points2, int* indexGroupMap, int* groupSizeMap,
@@ -29,38 +29,46 @@ void lsh_match_points(int nPoints2, int vectorLength, double* points1,
 
 int main() {
     const int nPoints = 10000;     // number of points in the first dataset
-    const int nPoints2 = nPoints; // number of points in the second dataset
+    const int nPoints2 = nPoints;  // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.3;
     const int numTables = 8;
 
     // points to be matched
-    double* points1 = (double*)malloc(nPoints * vectorLength * sizeof(double));
-    double* points2 = (double*)malloc(nPoints2 * vectorLength * sizeof(double));
+    double* points1 = (double*)malloc(numTables * nPoints * vectorLength * sizeof(double));
+    double* points2 = (double*)malloc(numTables * nPoints2 * vectorLength * sizeof(double));
 
     const int nPlanes = (int)log2(nPoints);
 
     fill_point_arrays(nPoints, nPoints2, vectorLength, noiseScale, points1, points2);
 
     // allocate hyperplanes
-    double* hyperplanes = (double*)malloc(nPlanes * vectorLength * sizeof(double));
+    const int hyperplanesTableLen = nPlanes * vectorLength;
+    const int hyperplanesLen = numTables * hyperplanesTableLen;
+    double* hyperplanes = (double*)malloc(hyperplanesLen * sizeof(double));
 
     //  - Arrays to organize groups -
     const int nBoxes = 1 << nPlanes;
     // the group that each point falls into
-    int* indexGroupMap = (int*)malloc(((nPoints > nPoints2) ? nPoints : nPoints2) * sizeof(int));
+    const int indexGroupMapTableLen = ((nPoints > nPoints2) ? nPoints : nPoints2) * sizeof(int);
+    const int indexGroupMapLen = numTables * indexGroupMapTableLen;
+    int* indexGroupMap = (int*)malloc(indexGroupMapLen * sizeof(int));
 
     // in case we're changing sizes
-    #define GROUP_X_MAP_SIZE nBoxes * sizeof(int)
+    const int groupMapTableLen = nBoxes;
+    const int groupMapLen = numTables * groupMapTableLen;
     // amount of points that fall into each group
-    int* groupSizeMap = (int*)malloc(GROUP_X_MAP_SIZE);
+    int* groupSizeMap = (int*)calloc(groupMapLen, sizeof(int));
     // the starting index for each group in groupArray
-    int* groupIndexMap = (int*)malloc(GROUP_X_MAP_SIZE);
+    int* groupIndexMap = (int*)malloc(groupMapLen * sizeof(int));
     // temporary values
-    int* groupIndexMapTails = (int*)malloc(GROUP_X_MAP_SIZE);
+    int* groupIndexMapTails = (int*)malloc(groupMapLen * sizeof(int));
 
     // Actual groups
-    int* groupArray = (int*)malloc(nPoints * sizeof(int));
+    const int groupArrayTableLen = nPoints;
+    const int groupArrayLen = numTables * groupArrayTableLen;
+    int* groupArray = (int*)malloc(groupArrayLen * sizeof(int));
+
     // holds the actual matches
     int* lshMatches = (int*)malloc(nPoints2 * sizeof(int));
     memset(lshMatches, -1, nPoints2 * sizeof(int));
@@ -71,23 +79,30 @@ int main() {
     }
 
     for (int table = 0; table < numTables; table++) {
+        double* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
+        int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
+        int* groupSizeMap2 = groupSizeMap + table * groupMapTableLen;
+        int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
+        int* groupIndexMapTails2 = groupIndexMapTails + table * groupMapTableLen;
+        int* groupArray2 = groupArray + table * groupArrayTableLen;
+
         // create normalized hyperplanes represented by vectors of euclidean size 1
-        fill_hyperplanes(nPlanes, vectorLength, hyperplanes);
+        fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
 
         calculate_hash_values(nPoints, nPlanes, vectorLength,
-                              points1, hyperplanes, indexGroupMap);
+                              points1, hyperplanes2, indexGroupMap2);
 
         // - Organize points so they can be indexed by their hash values -
-        organize_points_into_groups(nPoints, nBoxes, indexGroupMap, groupSizeMap,
-                                    groupIndexMap, groupIndexMapTails, groupArray);
+        organize_points_into_groups(nPoints, nBoxes, indexGroupMap2, groupSizeMap2,
+                                    groupIndexMap2, groupIndexMapTails2, groupArray2);
 
         // - Match points -
 
         calculate_hash_values(nPoints2, nPlanes, vectorLength,
-                              points2, hyperplanes, indexGroupMap);
+                              points2, hyperplanes2, indexGroupMap2);
 
-        lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap,
-                         groupSizeMap, groupIndexMap, groupArray,
+        lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap2,
+                         groupSizeMap2, groupIndexMap2, groupArray2,
                          lshMatches, bestMatchDists);
     }
 
@@ -96,7 +111,7 @@ int main() {
     for (int i = 0; i < nPoints2; i++) {
         correct += lshMatches[i] == i;
     }
-    double  correctRatio = ((double) correct) / nPoints2;
+    double correctRatio = ((double)correct) / nPoints2;
     printf("Correct ratio: %f\n", correctRatio);
 
     free(points1);
@@ -113,21 +128,20 @@ int main() {
 }
 
 void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, double noiseScale,
-                       double* points1, double* points2)
-{
+                       double* points1, double* points2) {
     for (int i = 0; i < ((nPoints1 < nPoints2) ? nPoints1 : nPoints2); i++) {
         double size1 = 0;
         double size2 = 0;
         for (int j = 0; j < vectorLength; j++) {
             // points1[i][:] = random array with values between -1 and 1
             double rn = rand_minus1_to_1();
-            points1[i*vectorLength + j] = rn;
+            points1[i * vectorLength + j] = rn;
             // points2[i][:] = points1[i][:] + noise
             double noise = noiseScale * rand_minus1_to_1();
-            points2[i*vectorLength + j] = rn + noise;
+            points2[i * vectorLength + j] = rn + noise;
             // Keep track of euclidean lengths to normalize after loop
-            size1 += points1[i*vectorLength + j] * points1[i*vectorLength + j];
-            size2 += points2[i*vectorLength + j] * points2[i*vectorLength + j];
+            size1 += points1[i * vectorLength + j] * points1[i * vectorLength + j];
+            size2 += points2[i * vectorLength + j] * points2[i * vectorLength + j];
         }
 
         size1 = sqrt(size1);
@@ -135,26 +149,24 @@ void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, double nois
 
         // normalize the vectors
         for (int j = 0; j < vectorLength; j++) {
-            points1[i*vectorLength + j] /= size1;
-            points2[i*vectorLength + j] /= size2;
+            points1[i * vectorLength + j] /= size1;
+            points2[i * vectorLength + j] /= size2;
         }
     }
 }
 
 void fill_hyperplanes(int nPlanes, int vectorLength, double* hyperplanes) {
-
     for (int i = 0; i < nPlanes; i++) {
         double size = 0;
         for (int j = 0; j < vectorLength; j++) {
             // hyperplanes[i][:] = random array with values between -1 and 1
-            hyperplanes[i*vectorLength + j] = rand_minus1_to_1();
+            hyperplanes[i * vectorLength + j] = rand_minus1_to_1();
             // Keep track of euclidean lengths to normalize after loop
             size += hyperplanes[i * vectorLength + j] * hyperplanes[i * vectorLength + j];
         }
 
-        
         size = sqrt(size);
-        double invsize = 1/size;
+        double invsize = 1 / size;
         // normalize the vectors
         for (int j = 0; j < vectorLength; j++) {
             hyperplanes[i * vectorLength + j] *= invsize;
@@ -164,8 +176,7 @@ void fill_hyperplanes(int nPlanes, int vectorLength, double* hyperplanes) {
 
 void calculate_hash_values(int nPoints, int nPlanes, int vectorLength,
                            double* points, double* hyperplanes,
-                           int* indexGroupMap)
-{
+                           int* indexGroupMap) {
     // - Calculate hash values, keep track of sizes of each group -
     for (int i = 0; i < nPoints; i++) {
         double* point = &points[i * vectorLength];
@@ -190,12 +201,11 @@ void calculate_hash_values(int nPoints, int nPlanes, int vectorLength,
 }
 
 void organize_points_into_groups(int nPoints, int nBoxes,
-                          int* indexGroupMap, int* groupSizeMap,
-                          int* groupIndexMap, int* groupIndexMapTails,
-                          int* groupArray)
-{
-    // find the size of each group
-    memset(groupSizeMap, 0, GROUP_X_MAP_SIZE);
+                                 int* indexGroupMap, int* groupSizeMap,
+                                 int* groupIndexMap, int* groupIndexMapTails,
+                                 int* groupArray) {
+    // // find the size of each group
+    // memset(groupSizeMap, 0, nBoxes * sizeof(int));
     for (int i = 0; i < nPoints; i++) {
         groupSizeMap[indexGroupMap[i]]++;
     }
@@ -225,8 +235,7 @@ void organize_points_into_groups(int nPoints, int nBoxes,
 void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                       double* points2, int* indexGroupMap, int* groupSizeMap,
                       int* groupIndexMap, int* groupArray, int* lshMatches,
-                      double* bestMatchDists)
-{
+                      double* bestMatchDists) {
     for (int i = 0; i < nPoints2; i++) {
         // Find the group of elements from groupArray to match with
         bool changed = false;
