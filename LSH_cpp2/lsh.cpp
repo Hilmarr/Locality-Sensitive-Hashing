@@ -27,9 +27,26 @@ void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                       int* groupIndexMap, int* groupArray, int* lshMatches,
                       double* bestMatchDists);
 
+void find_potential_matches(int vectorLength, double* points1, double* points2, int* indexGroupMap,
+                            int* groupSizeMap, int* groupIndexMap, int* groupArray,
+                            int* checkedArr, int* potentialMatches, int* potentialMatchesIndices,
+                            int* potentialMatchesLengths);
+
+int double_int_arr_size(int** arr, int curSize) {
+    int newSize = 2*curSize;
+    int* newArr = (int*) malloc(newSize * sizeof(int));
+    for (int i = 0; i < curSize; i++) {
+        newArr[i] = (*arr)[i];
+    }
+    int* oldArr = *arr;
+    *arr = newArr;
+    free(oldArr);
+    return newSize;
+}
+
 int main() {
-    const int nPoints = 10000;     // number of points in the first dataset
-    const int nPoints2 = nPoints; // number of points in the second dataset
+    const int nPoints = 100;     // number of points in the first dataset
+    const int nPoints2 = nPoints;  // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.3;
     const int numTables = 8;
@@ -99,7 +116,61 @@ int main() {
         // - Match points -
 
         calculate_hash_values(nPoints2, nPlanes, vectorLength,
-                              points2, hyperplanes2, indexGroupMap2)  ;
+                              points2, hyperplanes2, indexGroupMap2);
+    }
+
+    int* checkedArr = (int*) malloc(nPoints * sizeof(int));
+    memset(checkedArr, -1, nPoints * sizeof(int));
+    int totalMatchCount = 0;
+    int potentialMatchesMaxLen = nPoints * 64;
+    int* potentialMatches = (int*) malloc(potentialMatchesMaxLen * sizeof(int));
+    int* potentialMatchesIndices = (int*) malloc(nPoints * sizeof(int));
+    int* potentialMatchesLengths = (int*)malloc(nPoints * sizeof(int));
+
+    // find possible matches
+    for (int i = 0; i < nPoints2; i++) {
+
+        potentialMatchesIndices[i] = totalMatchCount;
+
+        for (int table = 0; table < numTables; table++) {
+            int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
+            int* groupSizeMap2 = groupSizeMap + table * groupMapTableLen;
+            int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
+            int* groupArray2 = groupArray + table * groupArrayTableLen;
+
+            // Find the group of elements from groupArray to match with
+            int hashcode = indexGroupMap[i];
+            int size = groupSizeMap[hashcode];
+            int startIdx = groupIndexMap[hashcode];
+
+            // Add points to potentialMatches
+            for (int j = startIdx; j < startIdx + size; j++) {
+                int idx = groupArray[j];
+                if (checkedArr[idx] != i) {
+                    checkedArr[idx] = i;
+
+                    if (totalMatchCount >= potentialMatchesMaxLen) {
+                        potentialMatchesMaxLen =
+                            double_int_arr_size(&potentialMatches, potentialMatchesMaxLen);
+                        // printf(" maxLen = %d\n", potentialMatchesMaxLen);
+                    }
+
+                    potentialMatches[totalMatchCount] = idx;
+                    totalMatchCount++;
+                }
+            }
+        }
+
+        potentialMatchesLengths[i] = totalMatchCount - potentialMatchesIndices[i];
+    }
+
+    // match_points(nPoints2, vectorLength, points1, points2, )
+
+    for (int table = 0; table < numTables; table++) {
+        int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
+        int* groupSizeMap2 = groupSizeMap + table * groupMapTableLen;
+        int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
+        int* groupArray2 = groupArray + table * groupArrayTableLen;
 
         lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap2,
                          groupSizeMap2, groupIndexMap2, groupArray2,
@@ -125,6 +196,11 @@ int main() {
     free(groupArray);
     free(lshMatches);
     free(bestMatchDists);
+
+    free(checkedArr);
+    free(potentialMatches);
+    free(potentialMatchesIndices);
+    free(potentialMatchesLengths);
 }
 
 void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, double noiseScale,
