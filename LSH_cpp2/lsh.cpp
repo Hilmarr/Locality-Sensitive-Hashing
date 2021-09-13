@@ -45,8 +45,8 @@ int double_int_arr_size(int** arr, int curSize) {
 }
 
 int main() {
-    const int nPoints = 100;     // number of points in the first dataset
-    const int nPoints2 = nPoints;  // number of points in the second dataset
+    const int nPoints = 10000;     // number of points in the first dataset
+    const int nPoints2 = 10000;  // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.3;
     const int numTables = 8;
@@ -122,10 +122,10 @@ int main() {
     int* checkedArr = (int*) malloc(nPoints * sizeof(int));
     memset(checkedArr, -1, nPoints * sizeof(int));
     int totalMatchCount = 0;
-    int potentialMatchesMaxLen = nPoints * 64;
+    int potentialMatchesMaxLen = nPoints2 * 64;
     int* potentialMatches = (int*) malloc(potentialMatchesMaxLen * sizeof(int));
-    int* potentialMatchesIndices = (int*) malloc(nPoints * sizeof(int));
-    int* potentialMatchesLengths = (int*)malloc(nPoints * sizeof(int));
+    int* potentialMatchesIndices = (int*) malloc(nPoints2 * sizeof(int));
+    int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
 
     // find possible matches
     for (int i = 0; i < nPoints2; i++) {
