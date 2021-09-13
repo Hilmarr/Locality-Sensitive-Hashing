@@ -32,6 +32,10 @@ void find_potential_matches(int vectorLength, double* points1, double* points2, 
                             int* checkedArr, int* potentialMatches, int* potentialMatchesIndices,
                             int* potentialMatchesLengths);
 
+void match_points(int nPoints2, int vectorLength, double* points1, double* points2,
+             int* potentialMatches, int* potentialMatchesIndices, int* potentialMatchesLengths,
+             int* lshMatches, double* bestMatchDists);
+
 int double_int_arr_size(int** arr, int curSize) {
     int newSize = 2*curSize;
     int* newArr = (int*) malloc(newSize * sizeof(int));
@@ -46,7 +50,7 @@ int double_int_arr_size(int** arr, int curSize) {
 
 int main() {
     const int nPoints = 10000;     // number of points in the first dataset
-    const int nPoints2 = 10000;  // number of points in the second dataset
+    const int nPoints2 = nPoints;  // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.3;
     const int numTables = 8;
@@ -125,7 +129,7 @@ int main() {
     int potentialMatchesMaxLen = nPoints2 * 64;
     int* potentialMatches = (int*) malloc(potentialMatchesMaxLen * sizeof(int));
     int* potentialMatchesIndices = (int*) malloc(nPoints2 * sizeof(int));
-    int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
+    int* potentialMatchesLengths = (int*) malloc(nPoints2 * sizeof(int));
 
     // find possible matches
     for (int i = 0; i < nPoints2; i++) {
@@ -139,13 +143,13 @@ int main() {
             int* groupArray2 = groupArray + table * groupArrayTableLen;
 
             // Find the group of elements from groupArray to match with
-            int hashcode = indexGroupMap[i];
-            int size = groupSizeMap[hashcode];
-            int startIdx = groupIndexMap[hashcode];
+            int hashcode = indexGroupMap2[i];
+            int size = groupSizeMap2[hashcode];
+            int startIdx = groupIndexMap2[hashcode];
 
             // Add points to potentialMatches
             for (int j = startIdx; j < startIdx + size; j++) {
-                int idx = groupArray[j];
+                int idx = groupArray2[j];
                 if (checkedArr[idx] != i) {
                     checkedArr[idx] = i;
 
@@ -164,18 +168,20 @@ int main() {
         potentialMatchesLengths[i] = totalMatchCount - potentialMatchesIndices[i];
     }
 
-    // match_points(nPoints2, vectorLength, points1, points2, )
+    match_points(nPoints2, vectorLength, points1, points2,
+                potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
+                lshMatches, bestMatchDists);
 
-    for (int table = 0; table < numTables; table++) {
-        int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
-        int* groupSizeMap2 = groupSizeMap + table * groupMapTableLen;
-        int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
-        int* groupArray2 = groupArray + table * groupArrayTableLen;
+    // for (int table = 0; table < numTables; table++) {
+    //     int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
+    //     int* groupSizeMap2 = groupSizeMap + table * groupMapTableLen;
+    //     int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
+    //     int* groupArray2 = groupArray + table * groupArrayTableLen;
 
-        lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap2,
-                         groupSizeMap2, groupIndexMap2, groupArray2,
-                         lshMatches, bestMatchDists);
-    }
+    //     lsh_match_points(nPoints2, vectorLength, points1, points2, indexGroupMap2,
+    //                      groupSizeMap2, groupIndexMap2, groupArray2,
+    //                      lshMatches, bestMatchDists);
+    // }
 
     // - Check how many matches were correct -
     int correct = 0;
@@ -318,6 +324,7 @@ void lsh_match_points(int nPoints2, int vectorLength, double* points1,
                       int* groupIndexMap, int* groupArray, int* lshMatches,
                       double* bestMatchDists)
 {
+    // printf("old way:");
     for (int i = 0; i < nPoints2; i++) {
         // Find the group of elements from groupArray to match with
         bool changed = false;
@@ -327,9 +334,50 @@ void lsh_match_points(int nPoints2, int vectorLength, double* points1,
         int size = groupSizeMap[hashcode];
         int startIdx = groupIndexMap[hashcode];
 
+        // printf("i=%d\nidx = \n", i);
         // Match the points
         for (int j = startIdx; j < startIdx + size; j++) {
             int idx = groupArray[j];
+            // printf(" - %d\n", idx);
+            // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
+            double diff = 0;
+            for (int k = 0; k < vectorLength; k++) {
+                double tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
+                diff += tmp * tmp;
+            }
+            // check if distance is the lowest distance so far
+            if (diff < bestFitDist) {
+                // printf("bestFitDist=%.3f   diff=%.3f   match=%d", bestFitDist, diff, match);
+                bestFitDist = diff;
+                match = idx;
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            lshMatches[i] = match;
+            bestMatchDists[i] = bestFitDist;
+        }
+    }
+}
+
+void match_points(int nPoints2, int vectorLength, double* points1, double* points2,
+                  int* potentialMatches, int* potentialMatchesIndices, int* potentialMatchesLengths,
+                  int* lshMatches, double* bestMatchDists)
+{
+    // printf("new way:");
+    for (int i = 0; i < nPoints2; i++) {
+        bool changed = false;
+        double bestFitDist = bestMatchDists[i];
+        int match = -1;
+        int jStart = potentialMatchesIndices[i];
+        int jEnd = potentialMatchesIndices[i] + potentialMatchesLengths[i];
+
+        // printf("i=%d\nidx = \n", i);
+        // Match the points
+        for (int j = jStart; j < jEnd; j++) {
+            int idx = potentialMatches[j];
+            // printf(" - %d\n", idx);
             // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
             double diff = 0;
             for (int k = 0; k < vectorLength; k++) {
