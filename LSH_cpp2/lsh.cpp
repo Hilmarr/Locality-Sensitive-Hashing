@@ -52,6 +52,8 @@ int find_potential_matches(// inputs
                            int* potentialMatches, int* potentialMatchesIndices,
                            int* potentialMatchesLengths);
 
+
+
 int double_int_arr_size(int** arr, int curSize) {
     int newSize = 2*curSize;
     int* newArr = (int*) malloc(newSize * sizeof(int));
@@ -65,7 +67,7 @@ int double_int_arr_size(int** arr, int curSize) {
 }
 
 int main() {
-    const int nPoints = 40000;     // number of points in the first dataset
+    const int nPoints = 10000;     // number of points in the first dataset
     const int nPoints2 = nPoints;  // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.3;
@@ -119,12 +121,19 @@ int main() {
         bestMatchDists[i] = 1e10;
     }
 
+    // fill all hyperplanes
+    for (int table = 0; table < numTables; table++) {
+        double* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
+        // create normalized hyperplanes represented by vectors of euclidean size 1
+        fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
+    }
+
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    // prev = time(NULL);
+    
     for (int table = 0; table < numTables; table++) {
         double* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
         int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
@@ -132,9 +141,6 @@ int main() {
         int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
         int* groupIndexMapTails2 = groupIndexMapTails + table * groupMapTableLen;
         int* groupArray2 = groupArray + table * groupArrayTableLen;
-
-        // create normalized hyperplanes represented by vectors of euclidean size 1
-        fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
 
         calculate_hash_values(nPoints, nPlanes, vectorLength,
                               points1, hyperplanes2, indexGroupMap2);
@@ -152,7 +158,7 @@ int main() {
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-    printf("Filling hyperplanes, calculating hash values, organizing points into groups:\n");
+    printf("Constructing lsh tables:\n");
     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 #endif
 
@@ -471,3 +477,6 @@ int find_potential_matches(// inputs
 
     return totalMatchCount;
 }
+
+
+// void construct_lsh_tables(int vectorLength, int numTables, double* )
