@@ -114,7 +114,6 @@ int main() {
         fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
     }
 
-
     //  -- Arrays to organize groups --
 
     const int nBoxes = 1 << nPlanes;
@@ -147,6 +146,7 @@ int main() {
 
     // -- Construct and store LSH tables using 
 
+    // later: split this into two functions
     construct_lsh_tables(// input
                          vectorLength, numTables, nPoints1, nPoints2, points1, points2,
                          nPlanes, nBoxes, hyperplanes, hyperplanesTableLen,
@@ -154,6 +154,8 @@ int main() {
                          // output
                          groupArray, groupArrayTableLen, groupSizeMap, groupIndexMap,
                          indexGroupMap);
+
+    // calculate indices into lsh tables for the matching set
 
 #ifdef TIME_LSH
         gettimeofday(&time, NULL);
@@ -351,6 +353,24 @@ void organize_points_into_groups(// input
     }
 }
 
+void calculate_indexGroupMap(// input
+                             int vectorLength, int numTables, int nPlanes,
+                             int nPoints, double* points,
+                             double* hyperplanes, int hyperplanesTableLen,
+                             int indexGroupMapTableLen,
+                             // output
+                             int* indexGroupMap)
+{
+    for (int table = 0; table < numTables; table++) {
+        double* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
+        int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
+        // - Match points -
+        calculate_hash_values(vectorLength, nPoints, nPlanes,
+                              points, hyperplanes2, indexGroupMap2);
+    }
+}
+
+
 void construct_lsh_tables(// input
                           int vectorLength, int numTables,
                           int nPoints1, int nPoints2,
@@ -367,6 +387,7 @@ void construct_lsh_tables(// input
     const int groupMapTableLen = nBoxes;
     const int groupMapLen = numTables * groupMapTableLen;
 
+    // calculate indices into lsh tables for the original set
     calculate_indexGroupMap(vectorLength, numTables, nPlanes, nPoints1, points1,
                            hyperplanes, hyperplanesTableLen, indexGroupMapTableLen,
                            indexGroupMap);
@@ -389,26 +410,10 @@ void construct_lsh_tables(// input
 
     free(groupIndexMapTails);
 
+    // This should be in a separate function
     calculate_indexGroupMap(vectorLength, numTables, nPlanes, nPoints2, points2,
                             hyperplanes, hyperplanesTableLen, indexGroupMapTableLen,
                             indexGroupMap);
-}
-
-void calculate_indexGroupMap(// input
-                             int vectorLength, int numTables, int nPlanes,
-                             int nPoints, double* points,
-                             double* hyperplanes, int hyperplanesTableLen,
-                             int indexGroupMapTableLen,
-                             // output
-                             int* indexGroupMap)
-{
-    for (int table = 0; table < numTables; table++) {
-        double* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
-        int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
-        // - Match points -
-        calculate_hash_values(vectorLength, nPoints, nPlanes,
-                              points, hyperplanes2, indexGroupMap2);
-    }
 }
 
 int find_potential_matches(// inputs
