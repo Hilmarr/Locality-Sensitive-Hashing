@@ -42,6 +42,16 @@ void match_points(int nPoints2, int vectorLength, double* points1, double* point
              int* potentialMatches, int* potentialMatchesIndices, int* potentialMatchesLengths,
              int* lshMatches, double* bestMatchDists);
 
+int find_potential_matches(// inputs
+                           int nPoints, int nPoints2, int vectorLength, int numTables,
+                           int* indexGroupMap, int indexGroupMapTableLen,
+                           int* groupSizeMap, int* groupIndexMap, int groupMapTableLen, 
+                           int* groupArray, int groupArrayTableLen,
+                           int potentialMatchesMaxLen,
+                           // outputs
+                           int* potentialMatches, int* potentialMatchesIndices,
+                           int* potentialMatchesLengths);
+
 int double_int_arr_size(int** arr, int curSize) {
     int newSize = 2*curSize;
     int* newArr = (int*) malloc(newSize * sizeof(int));
@@ -59,7 +69,7 @@ int main() {
     const int nPoints2 = nPoints;  // number of points in the second dataset
     const int vectorLength = 128;
     const double noiseScale = 0.3;
-    const int numTables = 14;
+    const int numTables = 8;
 
     struct timeval time;
     long startTime;
@@ -146,8 +156,6 @@ int main() {
     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 #endif
 
-    int* checkedArr = (int*) malloc(nPoints * sizeof(int));
-    memset(checkedArr, -1, nPoints * sizeof(int));
     int totalMatchCount = 0;
     int potentialMatchesMaxLen = nPoints2 * 64;
     int* potentialMatches = (int*) malloc(potentialMatchesMaxLen * sizeof(int));
@@ -159,42 +167,16 @@ int main() {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    // find possible matches
-    for (int i = 0; i < nPoints2; i++) {
 
-        potentialMatchesIndices[i] = totalMatchCount;
-
-        for (int table = 0; table < numTables; table++) {
-            int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
-            int* groupSizeMap2 = groupSizeMap + table * groupMapTableLen;
-            int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
-            int* groupArray2 = groupArray + table * groupArrayTableLen;
-
-            // Find the group of elements from groupArray to match with
-            int hashcode = indexGroupMap2[i];
-            int size = groupSizeMap2[hashcode];
-            int startIdx = groupIndexMap2[hashcode];
-
-            // Add points to potentialMatches
-            for (int j = startIdx; j < startIdx + size; j++) {
-                int idx = groupArray2[j];
-                if (checkedArr[idx] != i) {
-                    checkedArr[idx] = i;
-
-                    if (totalMatchCount >= potentialMatchesMaxLen) {
-                        potentialMatchesMaxLen =
-                            double_int_arr_size(&potentialMatches, potentialMatchesMaxLen);
-                        // printf(" maxLen = %d\n", potentialMatchesMaxLen);
-                    }
-
-                    potentialMatches[totalMatchCount] = idx;
-                    totalMatchCount++;
-                }
-            }
-        }
-
-        potentialMatchesLengths[i] = totalMatchCount - potentialMatchesIndices[i];
-    }
+    find_potential_matches(//inputs
+                           nPoints, nPoints2, vectorLength,numTables,
+                           indexGroupMap, indexGroupMapTableLen,
+                           groupSizeMap, groupIndexMap, groupMapTableLen, 
+                           groupArray, groupArrayTableLen,
+                           potentialMatchesMaxLen,
+                           // outputs
+                           potentialMatches, potentialMatchesIndices,
+                           potentialMatchesLengths);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -206,9 +188,11 @@ int main() {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+
     match_points(nPoints2, vectorLength, points1, points2,
                 potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
                 lshMatches, bestMatchDists);
+
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -237,7 +221,6 @@ int main() {
     free(lshMatches);
     free(bestMatchDists);
 
-    free(checkedArr);
     free(potentialMatches);
     free(potentialMatchesIndices);
     free(potentialMatchesLengths);
@@ -432,4 +415,59 @@ void match_points(int nPoints2, int vectorLength, double* points1, double* point
             bestMatchDists[i] = bestFitDist;
         }
     }
+}
+
+int find_potential_matches(// inputs
+                           int nPoints, int nPoints2, int vectorLength, int numTables,
+                           int* indexGroupMap, int indexGroupMapTableLen,
+                           int* groupSizeMap, int* groupIndexMap, int groupMapTableLen, 
+                           int* groupArray, int groupArrayTableLen,
+                           int potentialMatchesMaxLen,
+                           // outputs
+                           int* potentialMatches, int* potentialMatchesIndices,
+                           int* potentialMatchesLengths)
+{
+    int* checkedArr = (int*)malloc(nPoints * sizeof(int));
+    memset(checkedArr, -1, nPoints * sizeof(int));
+    int totalMatchCount = 0;
+
+    // find possible matches
+    for (int i = 0; i < nPoints2; i++) {
+        potentialMatchesIndices[i] = totalMatchCount;
+
+        for (int table = 0; table < numTables; table++) {
+            int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
+            int* groupSizeMap2 = groupSizeMap + table * groupMapTableLen;
+            int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
+            int* groupArray2 = groupArray + table * groupArrayTableLen;
+
+            // Find the group of elements from groupArray to match with
+            int hashcode = indexGroupMap2[i];
+            int size = groupSizeMap2[hashcode];
+            int startIdx = groupIndexMap2[hashcode];
+
+            // Add points to potentialMatches
+            for (int j = startIdx; j < startIdx + size; j++) {
+                int idx = groupArray2[j];
+                if (checkedArr[idx] != i) {
+                    checkedArr[idx] = i;
+
+                    if (totalMatchCount >= potentialMatchesMaxLen) {
+                        potentialMatchesMaxLen =
+                            double_int_arr_size(&potentialMatches, potentialMatchesMaxLen);
+                        // printf(" maxLen = %d\n", potentialMatchesMaxLen);
+                    }
+
+                    potentialMatches[totalMatchCount] = idx;
+                    totalMatchCount++;
+                }
+            }
+        }
+
+        potentialMatchesLengths[i] = totalMatchCount - potentialMatchesIndices[i];
+    }
+
+    free(checkedArr);
+
+    return totalMatchCount;
 }
