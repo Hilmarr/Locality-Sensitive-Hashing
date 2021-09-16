@@ -500,8 +500,8 @@ void calculate_hash_values(// input
         float* point = &points[i * vectorLength];
         int hashcode = 0;  //  hashcode will be the group index
         // calculate hash value of the i'th point, store resut in indexGroupMap
-        float* hplane = hyperplanes;  // first hyperplane
         for (int j = 0; j < nPlanes; j++) {
+            float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
             // calculate point * hplane
             float vecMul = 0;
             for (int k = 0; k < vectorLength; k++) {
@@ -511,8 +511,6 @@ void calculate_hash_values(// input
             if (vecMul > 0) {
                 hashcode = hashcode | (1 << j);
             }
-            // next hyperplane
-            hplane += vectorLength;
         }
         indexGroupMap[i] = hashcode;  // save the hashcode
     }
