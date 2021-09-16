@@ -248,7 +248,7 @@ void lsh_match_points(int nPoints2, int vectorLength, double* points1,
             if (vecMul > 0) {
                 hashcode = hashcode | (1 << j);
             }
-            closeToHP[i*nPlanes + j] = vecMul < TOL;
+            closeToHP[i*nPlanes + j] = vecMul*vecMul < TOL;
             // next hyperplane
             hplane += vectorLength;
         }
