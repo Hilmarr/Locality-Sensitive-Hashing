@@ -150,15 +150,48 @@ void construct_lsh_tables(// input
                           // output
                           int* groupArray, int* groupSizeMap, int* groupIndexMap);
 
+/**
+ * For every point it goes through all the groups in groupArray it can get mapped into.
+ * groupArray stores these points as indices into the original point array,
+ * it does this for all tables.
+ * Then the function puts indices it can get mapped into that point's place in
+ * the potentialMatches array. After that the function creates two other arrays
+ * called potentialMatchesIndices and potentialMatchesLengths; these two arrays
+ * are used to index and iterate the potentialMatches array.
+ * 
+ * @param vectorLength : Number of dimensions for each point
+ * @param numTables : Number of LSH tables
+ * @param nPoints1 : Number of points in the LSH tables (points1)
+ *                   (size of groupArray, groupSizeMap, and groupIndexMap)
+ * @param nPoints2 : Number of points to be matched with the points in the LSH tables (points2)
+ * @param indexGroupMap : Calculated hash values for points2
+ * @param indexGroupMapTableLen : Length of indexGroupMap per table
+ * @param groupArray : Arrays with point indices sorted by their group.
+ * @param groupSizeMap : Arrays with sizes of each group in groupArray.
+ * @param groupIndexMap : Arrays with group indices, indexes into groupArray.
+ * @param groupMapTableLen : Length of all the groupMaps (number of groups)
+ * @param potentialMatchesMaxLen : The current max size of potentialMatchesLen
+ * 
+ * @param potentialMatches : Output - An array with indices into point1 containing the
+ *                           indices of all possible matches for each point in points2
+ * 
+ * @param potentialMatchesIndices : Output - Indices into potentialMatches
+ * 
+ * @param potentialMatchesLengths : Output - Number of matches for each point in point2
+ *                                           Used to iterate through potentialMatches
+ */
 int find_potential_matches(// inputs
                            int vectorLength, int numTables, int nPoints1, int nPoints2,
                            int* indexGroupMap, int indexGroupMapTableLen,
-                           int* groupSizeMap, int* groupIndexMap, int groupMapTableLen, 
-                           int* groupArray, int potentialMatchesMaxLen,
+                           int* groupArray, int* groupSizeMap, int* groupIndexMap,
+                           int groupMapTableLen, int potentialMatchesMaxLen,
                            // outputs
                            int* potentialMatches, int* potentialMatchesIndices,
                            int* potentialMatchesLengths);
 
+/**
+ * Uses result from find_potential_matches to match points1 and points2
+ */
 void match_points(// inputs
                   int vectorLength, int nPoints2, float* points2, float* points1,
                   int* potentialMatches, int* potentialMatchesIndices, int* potentialMatchesLengths,
@@ -275,8 +308,8 @@ int main() {
     find_potential_matches(//inputs
                            vectorLength, numTables, nPoints1, nPoints2,
                            indexGroupMap, indexGroupMapTableLen,
-                           groupSizeMap, groupIndexMap, groupMapTableLen, 
-                           groupArray, potentialMatchesMaxLen,
+                           groupArray, groupSizeMap, groupIndexMap,
+                           groupMapTableLen, potentialMatchesMaxLen,
                            // outputs
                            potentialMatches, potentialMatchesIndices,
                            potentialMatchesLengths);
@@ -300,6 +333,15 @@ int main() {
     for (int i = 0; i < nPoints2; i++) {
         bestMatchDists[i] = 1e10;
     }
+
+    // // Holds the second best
+    // int* lshMatches2 = (int*)malloc(nPoints2 * sizeof(int));
+    // memset(lshMatches, -1, nPoints2 * sizeof(int));
+    // // holds the best match for each point we're finding a match for
+    // float* bestMatchDists2 = (float*)malloc(nPoints2 * sizeof(float));
+    // for (int i = 0; i < nPoints2; i++) {
+    //     bestMatchDists[i] = 1e10;
+    // }
 
     match_points(vectorLength, nPoints2, points2, points1,
                  potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
@@ -511,8 +553,8 @@ void construct_lsh_tables(// input
 int find_potential_matches(// inputs
                            int vectorLength, int numTables, int nPoints1, int nPoints2,
                            int* indexGroupMap, int indexGroupMapTableLen,
-                           int* groupSizeMap, int* groupIndexMap, int groupMapTableLen, 
-                           int* groupArray, int potentialMatchesMaxLen,
+                           int* groupArray, int* groupSizeMap, int* groupIndexMap,
+                           int groupMapTableLen, int potentialMatchesMaxLen,
                            // outputs
                            int* potentialMatches, int* potentialMatchesIndices,
                            int* potentialMatchesLengths)
