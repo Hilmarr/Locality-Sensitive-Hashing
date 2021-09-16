@@ -196,7 +196,8 @@ void match_points(// inputs
                   int vectorLength, int nPoints2, float* points2, float* points1,
                   int* potentialMatches, int* potentialMatchesIndices, int* potentialMatchesLengths,
                   // outputs
-                  int* lshMatches, float* bestMatchDists);
+                  int* lshMatches, float* bestMatchDists,
+                  int* lshMatches2, float* bestMatchDists2);
 
 
 int double_int_arr_size(int** arr, int curSize) {
@@ -334,18 +335,19 @@ int main() {
         bestMatchDists[i] = 1e10;
     }
 
-    // // Holds the second best
-    // int* lshMatches2 = (int*)malloc(nPoints2 * sizeof(int));
-    // memset(lshMatches, -1, nPoints2 * sizeof(int));
-    // // holds the best match for each point we're finding a match for
-    // float* bestMatchDists2 = (float*)malloc(nPoints2 * sizeof(float));
-    // for (int i = 0; i < nPoints2; i++) {
-    //     bestMatchDists[i] = 1e10;
-    // }
+    // Holds the second best
+    int* lshMatches2 = (int*)malloc(nPoints2 * sizeof(int));
+    memset(lshMatches2, -1, nPoints2 * sizeof(int));
+    // holds the best match for each point we're finding a match for
+    float* bestMatchDists2 = (float*)malloc(nPoints2 * sizeof(float));
+    for (int i = 0; i < nPoints2; i++) {
+        bestMatchDists[i] = 1e10;
+    }
 
     match_points(vectorLength, nPoints2, points2, points1,
                  potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
-                 lshMatches, bestMatchDists);
+                 lshMatches, bestMatchDists,
+                 lshMatches2, bestMatchDists2);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -359,8 +361,30 @@ int main() {
     for (int i = 0; i < nPoints2; i++) {
         correct += lshMatches[i] == i;
     }
-    double  correctRatio = ((double) correct) / nPoints2;
-    printf("Correct ratio: %f\n", correctRatio);
+    double correctRatio = ((double) correct) / nPoints2;
+    printf("Correct ratio: %f\n\n", correctRatio);
+
+    // // average distances from second best
+    // double avgDist1 = 0;
+    // double avgDist2 = 0;
+    // double avgDist3 = 0;
+    // for (int i = 0; i < nPoints2; i++) {
+    //     if (bestMatchDists[i] != 1e10 && bestMatchDists2[i] != 1e10) {
+    //         double diff = bestMatchDists[i] - bestMatchDists2[i];
+    //         diff = diff * diff;
+    //         avgDist1 += diff;
+    //         avgDist2 += diff * (lshMatches[i] == i);
+    //         avgDist3 += diff * (lshMatches[i] != i);
+    //     }
+    // }
+    // avgDist1 /= nPoints2;
+    // avgDist2 /= correct;
+    // avgDist3 /= (nPoints2 - correct);
+
+    // printf("Average squared distance from second best: %e\n", avgDist1);
+    // printf("For correct matches:                       %e\n", avgDist2);
+    // printf("For incorrect matches:                     %e\n", avgDist3);
+    // printf("(Not counting when only one match was found)\n");
 
     free(points1);
     free(points2);
@@ -370,8 +394,11 @@ int main() {
     free(groupSizeMap);
     free(groupIndexMap);
     free(groupArray);
+
     free(lshMatches);
     free(bestMatchDists);
+    free(lshMatches2);
+    free(bestMatchDists2);
 
     free(potentialMatches);
     free(potentialMatchesIndices);
@@ -610,13 +637,16 @@ void match_points(// inputs
                   int vectorLength, int nPoints2, float* points2, float* points1,
                   int* potentialMatches, int* potentialMatchesIndices, int* potentialMatchesLengths,
                   // outputs
-                  int* lshMatches, float* bestMatchDists)
+                  int* lshMatches, float* bestMatchDists,
+                  int* lshMatches2, float* bestMatchDists2)
 {
     // printf("new way:");
     for (int i = 0; i < nPoints2; i++) {
         bool changed = false;
-        float bestFitDist = bestMatchDists[i];
+        float bestMatchDist = bestMatchDists[i];
+        float bestMatchDist2 = bestMatchDist;
         int match = -1;
+        int match2 = -1;
         int jStart = potentialMatchesIndices[i];
         int jEnd = potentialMatchesIndices[i] + potentialMatchesLengths[i];
 
@@ -632,9 +662,12 @@ void match_points(// inputs
                 diff += tmp * tmp;
             }
             // check if distance is the lowest distance so far
-            if (diff < bestFitDist) {
-                // printf("bestFitDist=%.3f   diff=%.3f   match=%d", bestFitDist, diff, match);
-                bestFitDist = diff;
+            if (diff < bestMatchDist) {
+                // save old value as second best
+                bestMatchDist2 = bestMatchDist;
+                match2 = match;
+                // update best value
+                bestMatchDist = diff;
                 match = idx;
                 changed = true;
             }
@@ -642,7 +675,9 @@ void match_points(// inputs
 
         if (changed) {
             lshMatches[i] = match;
-            bestMatchDists[i] = bestFitDist;
+            bestMatchDists[i] = bestMatchDist;
+            lshMatches2[i] = match2;
+            bestMatchDists2[i] = bestMatchDist2;
         }
     }
 }
