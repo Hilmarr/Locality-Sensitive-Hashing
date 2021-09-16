@@ -1,10 +1,10 @@
 CC = g++
 CFLAGS = -Wall -Wextra -Wpedantic
-FILES = lsh
+FILES = lsh mlsh
 
 .PHONY: default all clean
 
-default: all
+default: lsh
 
 all: $(FILES)
 

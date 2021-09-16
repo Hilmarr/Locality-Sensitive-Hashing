@@ -188,7 +188,7 @@ int find_potential_matches(// inputs
                            int* groupArray, int* groupSizeMap, int* groupIndexMap,
                            int groupMapTableLen, int potentialMatchesMaxLen,
                            // outputs
-                           int* potentialMatches, int* potentialMatchesIndices,
+                           int** potentialMatches, int* potentialMatchesIndices,
                            int* potentialMatchesLengths);
 
 /**
@@ -345,7 +345,7 @@ int main() {
                            groupArray, groupSizeMap, groupIndexMap,
                            groupMapTableLen, potentialMatchesMaxLen,
                            // outputs
-                           potentialMatches, potentialMatchesIndices,
+                           &potentialMatches, potentialMatchesIndices,
                            potentialMatchesLengths);
 
 #ifdef TIME_LSH
@@ -614,7 +614,7 @@ int find_potential_matches(// inputs
                            int* groupArray, int* groupSizeMap, int* groupIndexMap,
                            int groupMapTableLen, int potentialMatchesMaxLen,
                            // outputs
-                           int* potentialMatches, int* potentialMatchesIndices,
+                           int** potentialMatches, int* potentialMatchesIndices,
                            int* potentialMatchesLengths)
 {
     const int groupArrayTableLen = nPoints1;
@@ -646,11 +646,11 @@ int find_potential_matches(// inputs
 
                     if (totalMatchCount >= potentialMatchesMaxLen) {
                         potentialMatchesMaxLen =
-                            double_int_arr_size(&potentialMatches, potentialMatchesMaxLen);
+                            double_int_arr_size(potentialMatches, potentialMatchesMaxLen);
                         // printf(" maxLen = %d\n", potentialMatchesMaxLen);
                     }
 
-                    potentialMatches[totalMatchCount] = idx;
+                    (*potentialMatches)[totalMatchCount] = idx;
                     totalMatchCount++;
                 }
             }
