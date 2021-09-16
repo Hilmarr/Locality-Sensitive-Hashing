@@ -179,6 +179,8 @@ void construct_lsh_tables(// input
  * 
  * @param potentialMatchesLengths : Output - Number of matches for each point in point2
  *                                           Used to iterate through potentialMatches
+ * 
+ * @return The total amount of matches
  */
 int find_potential_matches(// inputs
                            int vectorLength, int numTables, int nPoints1, int nPoints2,
@@ -191,6 +193,37 @@ int find_potential_matches(// inputs
 
 /**
  * Uses result from find_potential_matches to match points1 and points2
+ * 
+ * @param vectorLength : Number of dimensions for each point
+ * 
+ * @param numTables : Number of LSH tables
+ * 
+ * @param nPoints2 : Number of points in points 2
+ * 
+ * @param points2 : Array of points to be matched with points1
+ * 
+ * @param points1 : Array of points used to create the LSH tables
+ * 
+ * @param potentialMatches : An array with indices into point1 containing the
+ *                           indices of all possible matches for each point in points2
+ *                           (i.e. potential matches between points2 and points1)
+ *
+ * @param potentialMatchesIndices : Indices used to index into potentialMatches
+ *
+ * @param potentialMatchesLengths : Number of matches for each point in point2
+ *                                  Used to iterate through potentialMatches
+ * 
+ * @param lshMatches : Output - Index into points1 representing the best match
+ *                              between points2  and points1
+ * 
+ * @param bestMatchDists : Output - Distances between points for every match
+ *                                  in lshMatches
+ * 
+ * @param lshMatches2 : Output - Index into points1 representing the 2nd best match
+ *                              between points2  and points1
+ * 
+ * @param bestMatchDists2 : Output - Distances between points for every match
+ *                                  in lshMatches2
  */
 void match_points(// inputs
                   int vectorLength, int nPoints2, float* points2, float* points1,
