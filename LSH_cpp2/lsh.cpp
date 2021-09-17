@@ -30,7 +30,7 @@ inline float rand_minus1_to_1() {
  * @param points2 : Output - Point array 2
  */
 void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, float noiseScale,
-                       float* points1, float* points2);
+                       float* __restrict__ points1, float* __restrict__ points2);
 
 /**
  * Fills the hyperplane array with random hyperplane vectors.
@@ -55,12 +55,13 @@ void fill_hyperplanes(int nPlanes, int vectorLength, float* hyperplanes);
  * 
  * @param indexGroupMap : Output - Calculated hash values, may be used as indices
  */
-void calculate_hash_values(// input
-                           int vectorLength,
-                           int nPoints, float* points,
-                           int nPlanes, float* hyperplanes,
-                           // output
-                           int* indexGroupMap);
+void calculate_hash_values(
+    // input
+    int vectorLength,
+    int nPoints, float* __restrict__ points,
+    int nPlanes, float* __restrict__ hyperplanes,
+    // output
+    int* __restrict__ indexGroupMap);
 
 /**
  * Takes as input an array of point-index-to-group mappings. Turns this into a
@@ -89,13 +90,16 @@ void calculate_hash_values(// input
  * 
  * @param groupIndexMap : Output - Array of group indices, indexes groupArray
  */
-void organize_points_into_groups(// input
-                                 int nPoints, int nGroups,
-                                 int* indexGroupMap,
-                                 // preallocated temporary storage
-                                 int* groupIndexMapTails,
-                                 // output
-                                 int* groupArray, int* groupSizeMap, int* groupIndexMap);
+void organize_points_into_groups(
+    // input
+    int nPoints, int nGroups,
+    int* __restrict__ indexGroupMap,
+    // preallocated temporary storage
+    int* __restrict__ groupIndexMapTails,
+    // output
+    int* __restrict__ groupArray,
+    int* __restrict__ groupSizeMap,
+    int* __restrict__ groupIndexMap);
 
 /**
  * Calculates indexGroup for all tables by calling 'calculate_hash_values'
@@ -110,14 +114,15 @@ void organize_points_into_groups(// input
  * @param indexGroupMapTableLen : The length of a single table in indexGroupMap
  * 
  * @param indexGroupMap : Output - Calculated hash values, may be used as indices
- */ 
-void calculate_indexGroupMap(// input
-                             int vectorLength, int numTables,
-                             int nPoints, float* points,
-                             int nPlanes, float* hyperplanes,
-                             int indexGroupMapTableLen,
-                             // output
-                             int* indexGroupMap);
+ */
+void calculate_indexGroupMap(
+    // input
+    int vectorLength, int numTables,
+    int nPoints, float* __restrict__ points,
+    int nPlanes, float* __restrict__ hyperplanes,
+    int indexGroupMapTableLen,
+    // output
+    int* __restrict__ indexGroupMap);
 
 /**
  * Combines functionality of 'calculate_indexGroupMap' and 'organize_points_into_group'
@@ -142,13 +147,15 @@ void calculate_indexGroupMap(// input
  * @param groupIndexMap : Output - Arrays with group indices, indexes into groupArray.
  * 
  */
-void construct_lsh_tables(// input
-                          int vectorLength, int numTables, int nGroups,
-                          int nPoints, float* points,
-                          int nPlanes, float* hyperplanes,
-                          int* indexGroupMap, int indexGroupMapTableLen,
-                          // output
-                          int* groupArray, int* groupSizeMap, int* groupIndexMap);
+void construct_lsh_tables(  // input
+    int vectorLength, int numTables, int nGroups,
+    int nPoints, float* __restrict__ points,
+    int nPlanes, float* __restrict__ hyperplanes,
+    int* __restrict__ indexGroupMap, int indexGroupMapTableLen,
+    // output
+    int* __restrict__ groupArray,
+    int* __restrict__ groupSizeMap,
+    int* __restrict__ groupIndexMap);
 
 /**
  * For every point it goes through all the groups in groupArray it can get mapped into.
@@ -182,14 +189,17 @@ void construct_lsh_tables(// input
  * 
  * @return The total amount of matches
  */
-int find_potential_matches(// inputs
-                           int vectorLength, int numTables, int nPoints1, int nPoints2,
-                           int* indexGroupMap, int indexGroupMapTableLen,
-                           int* groupArray, int* groupSizeMap, int* groupIndexMap,
-                           int groupMapTableLen, int potentialMatchesMaxLen,
-                           // outputs
-                           int** potentialMatches, int* potentialMatchesIndices,
-                           int* potentialMatchesLengths);
+int find_potential_matches(
+    // inputs
+    int vectorLength, int numTables, int nPoints1, int nPoints2,
+    int* __restrict__ indexGroupMap, int indexGroupMapTableLen,
+    int* __restrict__ groupArray, int* __restrict__ groupSizeMap,
+    int* __restrict__ groupIndexMap,
+    int groupMapTableLen, int potentialMatchesMaxLen,
+    // outputs
+    int** __restrict__ potentialMatches,
+    int* __restrict__ potentialMatchesIndices,
+    int* __restrict__ potentialMatchesLengths);
 
 /**
  * Uses result from find_potential_matches to match points1 and points2
@@ -225,13 +235,15 @@ int find_potential_matches(// inputs
  * @param bestMatchDists2 : Output - Distances between points for every match
  *                                  in lshMatches2
  */
-void match_points(// inputs
-                  int vectorLength, int nPoints2, float* points2, float* points1,
-                  int* potentialMatches, int* potentialMatchesIndices, int* potentialMatchesLengths,
-                  // outputs
-                  int* lshMatches, float* bestMatchDists,
-                  int* lshMatches2, float* bestMatchDists2);
-
+void match_points(
+    // inputs
+    int vectorLength, int nPoints2,
+    float* __restrict__ points2, float* __restrict__ points1,
+    int* __restrict__ potentialMatches, int* __restrict__ potentialMatchesIndices,
+    int* __restrict__ potentialMatchesLengths,
+    // outputs
+    int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
+    int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2);
 
 int double_int_arr_size(int** arr, int curSize) {
     int newSize = 2*curSize;
@@ -247,7 +259,7 @@ int double_int_arr_size(int** arr, int curSize) {
 
 
 int main() {
-    const int nPoints1 = 10000;     // number of points in the first dataset
+    const int nPoints1 = 40000;     // number of points in the first dataset
     const int nPoints2 = nPoints1;  // number of points in the second dataset
     const int vectorLength = 128;
     const float noiseScale = 0.3;
@@ -439,7 +451,7 @@ int main() {
 }
 
 void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, float noiseScale,
-                       float* points1, float* points2)
+                       float* __restrict__ points1, float* __restrict__ points2)
 {
     for (int i = 0; i < ((nPoints1 < nPoints2) ? nPoints1 : nPoints2); i++) {
         float size1 = 0;
@@ -488,12 +500,13 @@ void fill_hyperplanes(int nPlanes, int vectorLength, float* hyperplanes) {
     }
 }
 
-void calculate_hash_values(// input
-                           int vectorLength,
-                           int nPoints, float* points,
-                           int nPlanes, float* hyperplanes,
-                           // output
-                           int* indexGroupMap)
+void calculate_hash_values(
+    // input
+    int vectorLength,
+    int nPoints, float* __restrict__ points,
+    int nPlanes, float* __restrict__ hyperplanes,
+    // output
+    int* __restrict__ indexGroupMap)
 {
     // - Calculate hash values, keep track of sizes of each group -
     for (int i = 0; i < nPoints; i++) {
@@ -516,13 +529,16 @@ void calculate_hash_values(// input
     }
 }
 
-void organize_points_into_groups(// input
-                                 int nPoints, int nGroups,
-                                 int* indexGroupMap,
-                                 // preallocated storage, used to store temproary data
-                                 int* groupIndexMapTails,
-                                 // output
-                                 int* groupArray, int* groupSizeMap, int* groupIndexMap)
+void organize_points_into_groups(
+    // input
+    int nPoints, int nGroups,
+    int* __restrict__ indexGroupMap,
+    // preallocated temporary storage
+    int* __restrict__ groupIndexMapTails,
+    // output
+    int* __restrict__ groupArray,
+    int* __restrict__ groupSizeMap,
+    int* __restrict__ groupIndexMap)
 {
     // find the size of each group
     memset(groupSizeMap, 0, nGroups * sizeof(int));
@@ -552,13 +568,14 @@ void organize_points_into_groups(// input
     }
 }
 
-void calculate_indexGroupMap(// input
-                             int vectorLength, int numTables,
-                             int nPoints, float* points,
-                             int nPlanes, float* hyperplanes,
-                             int indexGroupMapTableLen,
-                             // output
-                             int* indexGroupMap)
+void calculate_indexGroupMap(
+    // input
+    int vectorLength, int numTables,
+    int nPoints, float* __restrict__ points,
+    int nPlanes, float* __restrict__ hyperplanes,
+    int indexGroupMapTableLen,
+    // output
+    int* __restrict__ indexGroupMap)
 {
     const int hyperplanesTableLen = nPlanes * vectorLength;
     for (int table = 0; table < numTables; table++) {
@@ -571,14 +588,15 @@ void calculate_indexGroupMap(// input
 }
 
 
-void construct_lsh_tables(// input
-                          int vectorLength, int numTables, int nGroups,
-                          int nPoints, float* points,
-                          int nPlanes, float* hyperplanes,
-                          int* indexGroupMap, int indexGroupMapTableLen,
-                          // output
-                          int* groupArray,
-                          int* groupSizeMap, int* groupIndexMap)
+void construct_lsh_tables(  // input
+    int vectorLength, int numTables, int nGroups,
+    int nPoints, float* __restrict__ points,
+    int nPlanes, float* __restrict__ hyperplanes,
+    int* __restrict__ indexGroupMap, int indexGroupMapTableLen,
+    // output
+    int* __restrict__ groupArray,
+    int* __restrict__ groupSizeMap,
+    int* __restrict__ groupIndexMap)
 {
     const int hyperplanesTableLen = nPlanes * vectorLength;;
     const int groupMapTableLen = nGroups;
@@ -608,14 +626,17 @@ void construct_lsh_tables(// input
     free(groupIndexMapTails);
 }
 
-int find_potential_matches(// inputs
-                           int vectorLength, int numTables, int nPoints1, int nPoints2,
-                           int* indexGroupMap, int indexGroupMapTableLen,
-                           int* groupArray, int* groupSizeMap, int* groupIndexMap,
-                           int groupMapTableLen, int potentialMatchesMaxLen,
-                           // outputs
-                           int** potentialMatches, int* potentialMatchesIndices,
-                           int* potentialMatchesLengths)
+int find_potential_matches(
+    // inputs
+    int vectorLength, int numTables, int nPoints1, int nPoints2,
+    int* __restrict__ indexGroupMap, int indexGroupMapTableLen,
+    int* __restrict__ groupArray, int* __restrict__ groupSizeMap,
+    int* __restrict__ groupIndexMap,
+    int groupMapTableLen, int potentialMatchesMaxLen,
+    // outputs
+    int** __restrict__ potentialMatches,
+    int* __restrict__ potentialMatchesIndices,
+    int* __restrict__ potentialMatchesLengths)
 {
     const int groupArrayTableLen = nPoints1;
 
@@ -659,17 +680,22 @@ int find_potential_matches(// inputs
         potentialMatchesLengths[i] = totalMatchCount - potentialMatchesIndices[i];
     }
 
+    // printf("\nmatches found: %d\n\n", totalMatchCount);
+
     free(checkedArr);
 
     return totalMatchCount;
 }
 
-void match_points(// inputs
-                  int vectorLength, int nPoints2, float* points2, float* points1,
-                  int* potentialMatches, int* potentialMatchesIndices, int* potentialMatchesLengths,
-                  // outputs
-                  int* lshMatches, float* bestMatchDists,
-                  int* lshMatches2, float* bestMatchDists2)
+void match_points(
+    // inputs
+    int vectorLength, int nPoints2,
+    float* __restrict__ points2, float* __restrict__ points1,
+    int* __restrict__ potentialMatches, int* __restrict__ potentialMatchesIndices,
+    int* __restrict__ potentialMatchesLengths,
+    // outputs
+    int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
+    int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2)
 {
     // printf("new way:");
     for (int i = 0; i < nPoints2; i++) {
