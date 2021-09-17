@@ -1,2 +1,4 @@
 *.asv
+*gmon.out
+*gprof_results.txt
 

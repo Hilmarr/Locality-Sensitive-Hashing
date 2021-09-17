@@ -166,7 +166,6 @@ void construct_lsh_tables(  // input
  * called potentialMatchesIndices and potentialMatchesLengths; these two arrays
  * are used to index and iterate the potentialMatches array.
  * 
- * @param vectorLength : Number of dimensions for each point
  * @param numTables : Number of LSH tables
  * @param nPoints1 : Number of points in the LSH tables (points1)
  *                   (size of groupArray, groupSizeMap, and groupIndexMap)
@@ -191,7 +190,7 @@ void construct_lsh_tables(  // input
  */
 int find_potential_matches(
     // inputs
-    int vectorLength, int numTables, int nPoints1, int nPoints2,
+    int numTables, int nPoints1, int nPoints2,
     int* __restrict__ indexGroupMap, int indexGroupMapTableLen,
     int* __restrict__ groupArray, int* __restrict__ groupSizeMap,
     int* __restrict__ groupIndexMap,
@@ -259,7 +258,7 @@ int double_int_arr_size(int** arr, int curSize) {
 
 
 int main() {
-    const int nPoints1 = 10000;     // number of points in the first dataset
+    const int nPoints1 = 40000;     // number of points in the first dataset
     const int nPoints2 = nPoints1;  // number of points in the second dataset
     const int vectorLength = 128;
     const float noiseScale = 0.3;
@@ -345,14 +344,13 @@ int main() {
 #endif
 
     // Array allocation
-    int totalMatchCount = 0;
     int potentialMatchesMaxLen = nPoints2 * 64;
     int* potentialMatches = (int*)malloc(potentialMatchesMaxLen * sizeof(int));
     int* potentialMatchesIndices = (int*)malloc(nPoints2 * sizeof(int));
     int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
 
     find_potential_matches(//inputs
-                           vectorLength, numTables, nPoints1, nPoints2,
+                           numTables, nPoints1, nPoints2,
                            indexGroupMap, indexGroupMapTableLen,
                            groupArray, groupSizeMap, groupIndexMap,
                            groupMapTableLen, potentialMatchesMaxLen,
@@ -598,7 +596,6 @@ void construct_lsh_tables(  // input
     int* __restrict__ groupSizeMap,
     int* __restrict__ groupIndexMap)
 {
-    const int hyperplanesTableLen = nPlanes * vectorLength;;
     const int groupMapTableLen = nGroups;
     const int groupMapLen = numTables * groupMapTableLen;
     const int groupArrayTableLen = nPoints;
@@ -628,7 +625,7 @@ void construct_lsh_tables(  // input
 
 int find_potential_matches(
     // inputs
-    int vectorLength, int numTables, int nPoints1, int nPoints2,
+    int numTables, int nPoints1, int nPoints2,
     int* __restrict__ indexGroupMap, int indexGroupMapTableLen,
     int* __restrict__ groupArray, int* __restrict__ groupSizeMap,
     int* __restrict__ groupIndexMap,
