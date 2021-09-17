@@ -4,7 +4,7 @@ CC = g++
 CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic -g -pg
 FILES = lsh mlsh lsh_simple_usage
 
-.PHONY: default all clean
+.PHONY: default all clean profile_lsh
 
 default: lsh
 
