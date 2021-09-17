@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -Wall -Wextra -Wpedantic
-FILES = lsh mlsh
+FILES = lsh mlsh lsh_simple_usage
 
 .PHONY: default all clean
 
