@@ -1,0 +1,24 @@
+-- Size of problem --
+nPoints1 = 40000
+nPoints2 = 40000
+vectorLength = 128
+uniform noise, scale = 0.3
+numTables = 16
+--------------------
+
+
+--------- Time 1 ---------
+Constructing lsh tables:
+   - time: 2.394 seconds
+Finding potential matches
+   - time: 0.040 seconds
+Matching potential matches
+   - time: 0.300 seconds
+Correct ratio: 0.984125
+
+real	0m2,858s
+user	0m2,838s
+sys	0m0,021s
+--------------------------
+
+
