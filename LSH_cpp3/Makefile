@@ -1,9 +1,5 @@
-# CC = pgc++
-# # CFLAGS = -Wall -Wextra -Wpedantic -acc -fast -Minfo=all
-CC = g++
-# CFLAGS = -Wall -Wextra -Wpedantic
-# CFLAGS = -O3 -Wall -Wextra -Wpedantic
-CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic -g -pg
+CC = pgc++
+CFLAGS = -Wall -Wextra -Wpedantic -acc -fast -Minfo=all
 FILES = lsh
 
 .PHONY: default all clean profile_lsh
@@ -17,6 +13,10 @@ all: $(FILES)
 
 profile_lsh:
 	gprof lsh gmon.out > gprof_results.txt
+
+nvprof_lsh:
+	nvprof --unified-memory-profiling off ./lsh
+
 
 clean:
 	rm -f $(FILES) *.o

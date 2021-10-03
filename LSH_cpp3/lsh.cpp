@@ -258,6 +258,7 @@ int double_int_arr_size(int** arr, int curSize) {
 
 
 int main() {
+    srand(0);
     const int nPoints1 = 40000;     // number of points in the first dataset
     const int nPoints2 = nPoints1;  // number of points in the second dataset
     const int vectorLength = 128;
@@ -318,7 +319,7 @@ int main() {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    // -- Construct and store LSH tables using
+    // -- Construct and store LSH tables --
 
     construct_lsh_tables(// input
                          vectorLength, numTables, nGroups,
@@ -329,14 +330,29 @@ int main() {
                          groupArray,
                          groupSizeMap, groupIndexMap);
 
+#ifdef TIME_LSH
+        gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("Constructing lsh tables:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
     // calculate indices into lsh tables for the matching set
     calculate_indexGroupMap(vectorLength, numTables, nPoints2, points2,
                             nPlanes, hyperplanes, indexGroupMapTableLen, indexGroupMap);
 
 #ifdef TIME_LSH
-        gettimeofday(&time, NULL);
+    gettimeofday(&time, NULL);
     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-    printf("Constructing lsh tables:\n");
+    printf("Calculating group mappings for the other point dataset:\n");
     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 
     gettimeofday(&time, NULL);
@@ -405,9 +421,10 @@ int main() {
         correct += lshMatches[i] == i;
     }
     double correctRatio = ((double) correct) / nPoints2;
-    printf("Correct ratio: %f\n\n", correctRatio);
+    printf("Correct ratio: %f\n", correctRatio);
 
     // // average distances from second best
+    // printf("\n");
     // double avgDist1 = 0;
     // double avgDist2 = 0;
     // double avgDist3 = 0;
