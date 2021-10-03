@@ -247,9 +247,7 @@ void match_points(
 int double_int_arr_size(int** arr, int curSize) {
     int newSize = 2*curSize;
     int* newArr = (int*) malloc(newSize * sizeof(int));
-    for (int i = 0; i < curSize; i++) {
-        newArr[i] = (*arr)[i];
-    }
+    memcpy(newArr, *arr, curSize * sizeof(int));
     int* oldArr = *arr;
     *arr = newArr;
     free(oldArr);
@@ -524,14 +522,23 @@ void calculate_hash_values(
     int* __restrict__ indexGroupMap)
 {
     // - Calculate hash values, keep track of sizes of each group -
+    #pragma acc data \
+      copy(points[nPoints*vectorLength]) \
+      copy(hyperplanes[nPlanes*vectorLength]) \
+      copyout(indexGroupMap[nPoints])
+    {
+    #pragma acc parallel loop
     for (int i = 0; i < nPoints; i++) {
         float* point = &points[i * vectorLength];
         int hashcode = 0;  //  hashcode will be the group index
+
         // calculate hash value of the i'th point, store resut in indexGroupMap
+        #pragma acc loop reduction(|:hashcode)
         for (int j = 0; j < nPlanes; j++) {
             float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
             // calculate point * hplane
             float vecMul = 0;
+            #pragma acc loop reduction(+:vecMul)
             for (int k = 0; k < vectorLength; k++) {
                 vecMul += point[k] * hplane[k];
             }
@@ -541,6 +548,7 @@ void calculate_hash_values(
             }
         }
         indexGroupMap[i] = hashcode;  // save the hashcode
+    }
     }
 }
 

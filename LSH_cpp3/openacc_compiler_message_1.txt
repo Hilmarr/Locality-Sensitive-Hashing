@@ -1,0 +1,91 @@
+274, fill_point_arrays(int, int, int, float, float *, float *) inlined, size=34 (inline) file lsh.cpp (468)
+         472, Loop not vectorized/parallelized: contains call
+         474, rand_minus1_to_1() inlined, size=2 (inline) file lsh.cpp (16)
+         488, Generated vector simd code for the loop
+    287, fill_hyperplanes(int, int, float *) inlined, size=20 (inline) file lsh.cpp (495)
+         499, Loop not vectorized/parallelized: contains call
+         501, rand_minus1_to_1() inlined, size=2 (inline) file lsh.cpp (16)
+         510, Generated vector simd code for the loop
+    322, construct_lsh_tables(int, int, int, int, float *, int, float *, int *, int, int *, int *, int *) inlined, size=97 (inline) file lsh.cpp (613)
+         619, calculate_indexGroupMap(int, int, int, float *, int, float *, int, int *) inlined, size=33 (inline) file lsh.cpp (592)
+              598, calculate_hash_values(int, int, float *, int, float *, int *) inlined, size=17 (inline) file lsh.cpp (523)
+         619, Loop not fused: function call before adjacent loop
+              Loop not vectorized/parallelized: too deeply nested
+              Generated vector simd code for the loop containing reductions
+         625, Loop not vectorized/parallelized: contains call
+         633, organize_points_into_groups(int, int, int *, int *, int *, int *, int *) inlined, size=20 (inline) file lsh.cpp (555)
+         633, Loop not fused: different loop trip count
+              Loop not vectorized: data dependency
+              Loop unrolled 4 times
+              Loop unrolled 2 times
+    347, calculate_indexGroupMap(int, int, int, float *, int, float *, int, int *) inlined, size=33 (inline) file lsh.cpp (592)
+         478, FMA (fused multiply-add) instruction(s) generated
+         480, FMA (fused multiply-add) instruction(s) generated
+         501, FMA (fused multiply-add) instruction(s) generated
+         594, Loop not fused: function call before adjacent loop
+              Loop not vectorized/parallelized: too deeply nested
+         598, Generated vector simd code for the loop containing reductions
+              FMA (fused multiply-add) instruction(s) generated
+         619, FMA (fused multiply-add) instruction(s) generated
+         729, FMA (fused multiply-add) instruction(s) generated
+    366, find_potential_matches(int, int, int, int *, int, int *, int *, int *, int, int, int **, int *, int *) inlined, size=42 (inline) file lsh.cpp (652)
+         675, Loop not vectorized/parallelized: contains call
+         681, double_int_arr_size(int **, int) inlined, size=7 (inline) file lsh.cpp (247)
+    391, Memory set idiom, loop replaced by call to __c_mset4
+    400, Memory set idiom, loop replaced by call to __c_mset4
+    404, match_points(int, int, float *, float *, int *, int *, int *, int *, float *, int *, float *) inlined, size=29 (inline) file lsh.cpp (711)
+         713, Loop not fused: function call before adjacent loop
+         729, Generated vector simd code for the loop containing reductions
+    418, Loop not fused: function call before adjacent loop
+         Loop not vectorized: may not be beneficial
+         Loop unrolled 2 times
+fill_point_arrays(int, int, int, float, float *, float *):
+    472, Loop not vectorized/parallelized: contains call
+    474, rand_minus1_to_1() inlined, size=2 (inline) file lsh.cpp (16)
+    477, rand_minus1_to_1() inlined, size=2 (inline) file lsh.cpp (16)
+    480, FMA (fused multiply-add) instruction(s) generated
+    481, FMA (fused multiply-add) instruction(s) generated
+    488, Generated vector simd code for the loop
+fill_hyperplanes(int, int, float *):
+    499, Loop not vectorized/parallelized: contains call
+    501, rand_minus1_to_1() inlined, size=2 (inline) file lsh.cpp (16)
+    503, FMA (fused multiply-add) instruction(s) generated
+    510, Generated vector simd code for the loop
+calculate_hash_values(int, int, float *, int, float *, int *):
+    525, FMA (fused multiply-add) instruction(s) generated
+    533, Generated vector simd code for the loop containing reductions
+         FMA (fused multiply-add) instruction(s) generated
+organize_points_into_groups(int, int, int *, int *, int *, int *, int *):
+    558, Loop not fused: different loop trip count
+         Loop not vectorized: data dependency
+         Loop unrolled 2 times
+    567, Loop not fused: different loop trip count
+         Loop unrolled 4 times
+    574, Loop not vectorized: data dependency
+calculate_indexGroupMap(int, int, int, float *, int, float *, int, int *):
+    598, calculate_hash_values(int, int, float *, int, float *, int *) inlined, size=17 (inline) file lsh.cpp (523)
+         525, FMA (fused multiply-add) instruction(s) generated
+         533, Generated vector simd code for the loop containing reductions
+              FMA (fused multiply-add) instruction(s) generated
+         594, Loop not vectorized/parallelized: too deeply nested
+construct_lsh_tables(int, int, int, int, float *, int, float *, int *, int, int *, int *, int *):
+    619, calculate_indexGroupMap(int, int, int, float *, int, float *, int, int *) inlined, size=33 (inline) file lsh.cpp (592)
+         594, Loop not fused: function call before adjacent loop
+              Loop not vectorized/parallelized: too deeply nested
+         598, Generated vector simd code for the loop containing reductions
+              FMA (fused multiply-add) instruction(s) generated
+    625, Loop not vectorized/parallelized: contains call
+    633, organize_points_into_groups(int, int, int *, int *, int *, int *, int *) inlined, size=20 (inline) file lsh.cpp (555)
+         558, Loop not fused: different loop trip count
+              Loop not vectorized: data dependency
+              Loop unrolled 2 times
+         567, Loop not fused: different loop trip count
+              Loop unrolled 4 times
+         574, Loop not vectorized: data dependency
+find_potential_matches(int, int, int, int *, int, int *, int *, int *, int, int, int **, int *, int *):
+    675, Loop not vectorized/parallelized: contains call
+    681, double_int_arr_size(int **, int) inlined, size=7 (inline) file lsh.cpp (247)
+match_points(int, int, float *, float *, int *, int *, int *, int *, float *, int *, float *):
+    713, FMA (fused multiply-add) instruction(s) generated
+    729, Generated vector simd code for the loop containing reductions
+         FMA (fused multiply-add) instruction(s) generated
