@@ -318,6 +318,7 @@ int main() {
 #endif
 
     // -- Construct and store LSH tables --
+    // future change: indexGroupMapTableLen can at this point just be nPoints1 * vectorLength
 
     construct_lsh_tables(// input
                          vectorLength, numTables, nGroups,
@@ -344,6 +345,7 @@ int main() {
 #endif
 
     // calculate indices into lsh tables for the matching set
+    // future change: indexGroupMapTableLen can at this point just be nPoints2 * vectorLength
     calculate_indexGroupMap(vectorLength, numTables, nPoints2, points2,
                             nPlanes, hyperplanes, indexGroupMapTableLen, indexGroupMap);
 
@@ -523,32 +525,33 @@ void calculate_hash_values(
 {
     // - Calculate hash values, keep track of sizes of each group -
     #pragma acc data \
-      copy(points[nPoints*vectorLength]) \
-      copy(hyperplanes[nPlanes*vectorLength]) \
+      copyin(points[nPoints*vectorLength]) \
+      copyin(hyperplanes[nPlanes*vectorLength]) \
       copyout(indexGroupMap[nPoints])
     {
-    #pragma acc parallel loop
-    for (int i = 0; i < nPoints; i++) {
-        float* point = &points[i * vectorLength];
-        int hashcode = 0;  //  hashcode will be the group index
+        #pragma acc parallel loop
+        for (int i = 0; i < nPoints; i++) {
 
-        // calculate hash value of the i'th point, store resut in indexGroupMap
-        #pragma acc loop reduction(|:hashcode)
-        for (int j = 0; j < nPlanes; j++) {
-            float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
-            // calculate point * hplane
-            float vecMul = 0;
-            #pragma acc loop reduction(+:vecMul)
-            for (int k = 0; k < vectorLength; k++) {
-                vecMul += point[k] * hplane[k];
+            float* point = &points[i * vectorLength];
+            int hashcode = 0;  //  hashcode will be the group index
+
+            // calculate hash value of the i'th point, store resut in indexGroupMap
+            #pragma acc loop reduction(|:hashcode)
+            for (int j = 0; j < nPlanes; j++) {
+                float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
+                // calculate point * hplane
+                float vecMul = 0;
+                #pragma acc loop reduction(+:vecMul)
+                for (int k = 0; k < vectorLength; k++) {
+                    vecMul += point[k] * hplane[k];
+                }
+                // set i'th bit to one if point is on "positive" side of hyperplane
+                if (vecMul > 0) {
+                    hashcode = hashcode | (1 << j);
+                }
             }
-            // set i'th bit to one if point is on "positive" side of hyperplane
-            if (vecMul > 0) {
-                hashcode = hashcode | (1 << j);
-            }
+            indexGroupMap[i] = hashcode;  // save the hashcode
         }
-        indexGroupMap[i] = hashcode;  // save the hashcode
-    }
     }
 }
 
