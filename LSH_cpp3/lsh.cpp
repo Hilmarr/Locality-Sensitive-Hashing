@@ -529,19 +529,19 @@ void calculate_hash_values(
       copyin(hyperplanes[nPlanes*vectorLength]) \
       copyout(indexGroupMap[nPoints])
     {
-        #pragma acc parallel loop
+        #pragma acc parallel loop gang worker num_workers(256) vector_length(4)
         for (int i = 0; i < nPoints; i++) {
 
             float* point = &points[i * vectorLength];
             int hashcode = 0;  //  hashcode will be the group index
 
             // calculate hash value of the i'th point, store resut in indexGroupMap
-            #pragma acc loop reduction(|:hashcode)
+            #pragma acc loop reduction(|:hashcode) vector
             for (int j = 0; j < nPlanes; j++) {
                 float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
                 // calculate point * hplane
                 float vecMul = 0;
-                #pragma acc loop reduction(+:vecMul)
+                #pragma acc loop reduction(+:vecMul) seq
                 for (int k = 0; k < vectorLength; k++) {
                     vecMul += point[k] * hplane[k];
                 }
