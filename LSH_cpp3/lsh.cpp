@@ -236,8 +236,9 @@ int find_potential_matches(
  */
 void match_points(
     // inputs
-    int vectorLength, int nPoints2,
-    float* __restrict__ points2, float* __restrict__ points1,
+    int vectorLength, int nPoints1, int nPoints2,
+    float* __restrict__ points1, float* __restrict__ points2,
+    int nPotentialMatches,
     int* __restrict__ potentialMatches, int* __restrict__ potentialMatchesIndices,
     int* __restrict__ potentialMatchesLengths,
     // outputs
@@ -291,7 +292,7 @@ int main() {
 
     const int nGroups = 1 << nPlanes;
     // the group that each point falls into
-    const int indexGroupMapTableLen = ((nPoints1 > nPoints2) ? nPoints1 : nPoints2) * sizeof(int);
+    const int indexGroupMapTableLen = ((nPoints1 > nPoints2) ? nPoints1 : nPoints2);
     const int indexGroupMapLen = numTables * indexGroupMapTableLen;
     int* indexGroupMap = (int*)malloc(indexGroupMapLen * sizeof(int));
 
@@ -365,14 +366,15 @@ int main() {
     int* potentialMatchesIndices = (int*)malloc(nPoints2 * sizeof(int));
     int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
 
-    find_potential_matches(//inputs
-                           numTables, nPoints1, nPoints2,
-                           indexGroupMap, indexGroupMapTableLen,
-                           groupArray, groupSizeMap, groupIndexMap,
-                           groupMapTableLen, potentialMatchesMaxLen,
-                           // outputs
-                           &potentialMatches, potentialMatchesIndices,
-                           potentialMatchesLengths);
+    int nPotentialMatches = find_potential_matches( 
+        //inputs
+        numTables, nPoints1, nPoints2,
+        indexGroupMap, indexGroupMapTableLen,
+        groupArray, groupSizeMap, groupIndexMap,
+        groupMapTableLen, potentialMatchesMaxLen,
+        // outputs
+        &potentialMatches, potentialMatchesIndices,
+        potentialMatchesLengths);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -403,8 +405,8 @@ int main() {
         bestMatchDists[i] = 1e10;
     }
 
-    match_points(vectorLength, nPoints2, points2, points1,
-                 potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
+    match_points(vectorLength, nPoints1, nPoints2, points1, points2,
+                 nPotentialMatches, potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
                  lshMatches, bestMatchDists,
                  lshMatches2, bestMatchDists2);
 
@@ -529,7 +531,7 @@ void calculate_hash_values(
       copyin(hyperplanes[nPlanes*vectorLength]) \
       copyout(indexGroupMap[nPoints])
     {
-        #pragma acc parallel loop gang worker num_workers(256) vector_length(4)
+        #pragma acc parallel loop gang worker num_workers(128) vector_length(8)
         for (int i = 0; i < nPoints; i++) {
 
             float* point = &points[i * vectorLength];
@@ -714,52 +716,64 @@ int find_potential_matches(
 
 void match_points(
     // inputs
-    int vectorLength, int nPoints2,
-    float* __restrict__ points2, float* __restrict__ points1,
+    int vectorLength, int nPoints1, int nPoints2,
+    float* __restrict__ points1, float* __restrict__ points2,
+    int nPotentialMatches,
     int* __restrict__ potentialMatches, int* __restrict__ potentialMatchesIndices,
     int* __restrict__ potentialMatchesLengths,
     // outputs
     int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
     int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2)
 {
-    // printf("new way:");
-    for (int i = 0; i < nPoints2; i++) {
-        bool changed = false;
-        float bestMatchDist = bestMatchDists[i];
-        float bestMatchDist2 = bestMatchDist;
-        int match = -1;
-        int match2 = -1;
-        int jStart = potentialMatchesIndices[i];
-        int jEnd = potentialMatchesIndices[i] + potentialMatchesLengths[i];
+    
+    #pragma acc data \
+        copyin(points1[nPoints1*vectorLength]) \
+        copyin(points2[nPoints2*vectorLength]) \
+        copyin(potentialMatches[nPotentialMatches])\
+        copyin(potentialMatchesIndices[nPoints2]) \
+        copyin(potentialMatchesLengths[nPoints2]) \
+        copy(lshMatches[nPoints2]) \
+        copy(bestMatchDists[nPoints2]) \
+        copy(lshMatches2[nPoints2]) \
+        copy(bestMatchDists2[nPoints2]) 
+    {
+        #pragma acc parallel loop gang num_workers(32) vector_length(1)
+        for (int i = 0; i < nPoints2; i++) {
+            bool changed = false;
+            float bestMatchDist = bestMatchDists[i];
+            float bestMatchDist2 = bestMatchDist;
+            int match = -1;
+            int match2 = -1;
+            int jStart = potentialMatchesIndices[i];
+            int jEnd = potentialMatchesIndices[i] + potentialMatchesLengths[i];
 
-        // printf("i=%d\nidx = \n", i);
-        // Match the points
-        for (int j = jStart; j < jEnd; j++) {
-            int idx = potentialMatches[j];
-            // printf(" - %d\n", idx);
-            // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
-            float diff = 0;
-            for (int k = 0; k < vectorLength; k++) {
-                float tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
-                diff += tmp * tmp;
+            // Match the points
+            for (int j = jStart; j < jEnd; j++) {
+                int idx = potentialMatches[j];
+                // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
+                float diff = 0;
+                for (int k = 0; k < vectorLength; k++) {
+                    float tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
+                    diff += tmp * tmp;
+                }
+                // check if distance is the lowest distance so far
+                if (diff < bestMatchDist) {
+                    // save old value as second best
+                    bestMatchDist2 = bestMatchDist;
+                    match2 = match;
+                    // update best value
+                    bestMatchDist = diff;
+                    match = idx;
+                    changed = true;
+                }
             }
-            // check if distance is the lowest distance so far
-            if (diff < bestMatchDist) {
-                // save old value as second best
-                bestMatchDist2 = bestMatchDist;
-                match2 = match;
-                // update best value
-                bestMatchDist = diff;
-                match = idx;
-                changed = true;
-            }
-        }
 
-        if (changed) {
-            lshMatches[i] = match;
-            bestMatchDists[i] = bestMatchDist;
-            lshMatches2[i] = match2;
-            bestMatchDists2[i] = bestMatchDist2;
+            if (changed) {
+                lshMatches[i] = match;
+                bestMatchDists[i] = bestMatchDist;
+                lshMatches2[i] = match2;
+                bestMatchDists2[i] = bestMatchDist2;
+            }
         }
     }
 }
