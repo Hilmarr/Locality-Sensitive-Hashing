@@ -259,7 +259,7 @@ int double_int_arr_size(int** arr, int curSize) {
 int main() {
     srand(0);
     const int nPoints1 = 40000;     // number of points in the first dataset
-    const int nPoints2 = nPoints1;  // number of points in the second dataset
+    const int nPoints2 = 40000;  // number of points in the second dataset
     const int vectorLength = 128;
     const float noiseScale = 0.3;
     const int numTables = 16;
@@ -292,9 +292,15 @@ int main() {
 
     const int nGroups = 1 << nPlanes;
     // the group that each point falls into
-    const int indexGroupMapTableLen = ((nPoints1 > nPoints2) ? nPoints1 : nPoints2);
+    const int indexGroupMapTableLen = nPoints1;
     const int indexGroupMapLen = numTables * indexGroupMapTableLen;
     int* indexGroupMap = (int*)malloc(indexGroupMapLen * sizeof(int));
+    // This code is clumsily written and should be fixed at a later point
+    // indexGroupMapTableLen should probably be removed as a parameter entirely
+    // but  enough for now
+    const int indexGroupMapTableLen2 = nPoints2;
+    const int indexGroupMapLen2 = numTables * indexGroupMapTableLen2;
+    int* indexGroupMap2 = (int*)malloc(indexGroupMapLen2 * sizeof(int));
 
     // in case we're changing sizes
     const int groupMapTableLen = nGroups;
@@ -348,7 +354,7 @@ int main() {
     // calculate indices into lsh tables for the matching set
     // future change: indexGroupMapTableLen can at this point just be nPoints2 * vectorLength
     calculate_indexGroupMap(vectorLength, numTables, nPoints2, points2,
-                            nPlanes, hyperplanes, indexGroupMapTableLen, indexGroupMap);
+                            nPlanes, hyperplanes, indexGroupMapTableLen2, indexGroupMap2);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -369,7 +375,7 @@ int main() {
     int nPotentialMatches = find_potential_matches( 
         //inputs
         numTables, nPoints1, nPoints2,
-        indexGroupMap, indexGroupMapTableLen,
+        indexGroupMap2, indexGroupMapTableLen2,
         groupArray, groupSizeMap, groupIndexMap,
         groupMapTableLen, potentialMatchesMaxLen,
         // outputs
@@ -453,6 +459,7 @@ int main() {
     free(hyperplanes);
 
     free(indexGroupMap);
+    free(indexGroupMap2);
     free(groupSizeMap);
     free(groupIndexMap);
     free(groupArray);
