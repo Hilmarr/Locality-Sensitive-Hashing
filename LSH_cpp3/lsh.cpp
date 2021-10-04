@@ -527,9 +527,9 @@ void calculate_hash_values(
 {
     // - Calculate hash values, keep track of sizes of each group -
     #pragma acc data \
-      copyin(points[nPoints*vectorLength]) \
-      copyin(hyperplanes[nPlanes*vectorLength]) \
-      copyout(indexGroupMap[nPoints])
+      pcopyin(points[nPoints*vectorLength]) \
+      pcopyin(hyperplanes[nPlanes*vectorLength]) \
+      pcopyout(indexGroupMap[nPoints])
     {
         #pragma acc parallel loop gang worker num_workers(128) vector_length(8)
         for (int i = 0; i < nPoints; i++) {
@@ -727,17 +727,17 @@ void match_points(
 {
     
     #pragma acc data \
-        copyin(points1[nPoints1*vectorLength]) \
-        copyin(points2[nPoints2*vectorLength]) \
-        copyin(potentialMatches[nPotentialMatches])\
-        copyin(potentialMatchesIndices[nPoints2]) \
-        copyin(potentialMatchesLengths[nPoints2]) \
-        copy(lshMatches[nPoints2]) \
-        copy(bestMatchDists[nPoints2]) \
-        copy(lshMatches2[nPoints2]) \
-        copy(bestMatchDists2[nPoints2]) 
+        pcopyin(points1[nPoints1*vectorLength]) \
+        pcopyin(points2[nPoints2*vectorLength]) \
+        pcopyin(potentialMatches[nPotentialMatches])\
+        pcopyin(potentialMatchesIndices[nPoints2]) \
+        pcopyin(potentialMatchesLengths[nPoints2]) \
+        pcopy(lshMatches[nPoints2]) \
+        pcopy(bestMatchDists[nPoints2]) \
+        pcopy(lshMatches2[nPoints2]) \
+        pcopy(bestMatchDists2[nPoints2]) 
     {
-        #pragma acc parallel loop gang num_workers(32) vector_length(1)
+        #pragma acc parallel loop gang worker num_workers(1) vector_length(32)
         for (int i = 0; i < nPoints2; i++) {
             bool changed = false;
             float bestMatchDist = bestMatchDists[i];
@@ -752,6 +752,7 @@ void match_points(
                 int idx = potentialMatches[j];
                 // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
                 float diff = 0;
+                #pragma loop vector reduction(+:diff)
                 for (int k = 0; k < vectorLength; k++) {
                     float tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
                     diff += tmp * tmp;

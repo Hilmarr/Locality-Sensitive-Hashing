@@ -111,6 +111,42 @@ user	0m0,618s
 sys	0m0,180s
 -----------------------------------------------------------
 
+-----------------------------------------------------------
+Parallelized match_points using OpenACC
+-----------------------------------------------------------
+Constructing lsh tables:
+   - time: 0.272 seconds
+Calculating group mappings for the other point dataset:
+   - time: 0.163 seconds
+Finding potential matches
+   - time: 0.038 seconds
+Matching potential matches
+   - time: 0.032 seconds
+Correct ratio: 0.984125
+
+real	0m0,698s
+user	0m0,523s
+sys	0m0,175s
+-----------------------------------------------------------
+
+-----------------------------------------------------------
+When calculate_hash_values was removed
+-----------------------------------------------------------
+Constructing lsh tables:
+   - time: 0.139 seconds
+Calculating group mappings for the other point dataset:
+   - time: 0.131 seconds
+Finding potential matches
+   - time: 0.035 seconds
+Matching potential matches
+   - time: 0.127 seconds
+Correct ratio: 0.984125
+
+real	0m0,620s
+user	0m0,440s
+sys	0m0,180s
+-----------------------------------------------------------
+
 
 
 
