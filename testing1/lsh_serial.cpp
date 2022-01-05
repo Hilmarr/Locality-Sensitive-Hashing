@@ -258,13 +258,49 @@ int double_int_arr_size(int** arr, int curSize) {
 }
 
 
+void find_vector_mean(int nPoints, float* points, float* mean) {
+    long sum[128] = {};
+    for (int i = 0; i < nPoints; i++) {
+        for (int j = 0; j < 128; j++) {
+            sum[j] += (long) 100 * points[i*128 + j];
+        }
+    }
+    
+    for (int i = 0; i < 128; i++) {
+        mean[i] = ((float) sum[i]) / (nPoints * 100);
+        // printf("mean[%d] = %f\n", i, mean[i]);
+    }
+}
+
+void subtract_vector_from_all(int nPoints, float* points, float* mean) {
+    for (int i = 0; i < nPoints; i++) {
+        for (int j = 0; j < 128; j++) {
+            points[i * 128 + j] -= mean[j];
+        }
+    }
+}
+
+void subtract_mean_of_1_from_both(
+    int nPoints1, int nPoints2, float* points1, float* points2)
+{
+    // The case where the table is only used once, could save the mean if one
+    // needs to subtract it from new datasets.
+    float mean[128];
+    find_vector_mean(nPoints1, points1, mean);
+    subtract_vector_from_all(nPoints1, points1, mean);
+    subtract_vector_from_all(nPoints2, points2, mean);
+    // for (int i = 0; i < 128; i++) {
+    //     printf("mean[%d]=%f\n", i, mean[i]);
+    // }
+}
+
+
 int main(int argc, char** argv) {
     srand(0);
     int nPoints1 = 0;     // number of points in the first dataset
     int nPoints2 = 0;       // number of points in the second dataset
     const int vectorLength = 128;
-    const float noiseScale = 0.3;
-    const int numTables = 16;
+    const int numTables = 32;
 
     // -- Read points from file --
 
@@ -277,219 +313,253 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    printf("\n\n");
-    for (int i = 1; i < 4; i++) {
-        printf("%s\n", argv[i]);
+    // printf("\n\n");
+    // for (int i = 1; i < 4; i++) {
+    //     printf("%s\n", argv[i]);
+    // }
+
+    int* tmp1;
+    int* tmp2;
+
+    // points to be matched
+    nPoints1 = read_vector_file2(argv[1], &tmp1) / 128;
+    nPoints2 = read_vector_file2(argv[2], &tmp2) / 128;
+
+    // printf("nPoints1=%d,  nPoints2=%d\n")
+
+    float* points1 = (float*) tmp1;
+    float* points2 = (float*) tmp2;
+
+    subtract_mean_of_1_from_both(nPoints1, nPoints2, points1, points2);
+
+    // int negativCnt = 0;
+    // for (int i = 0; i < nPoints1*128; i++) {
+    //     if (points1[i] < 0) {
+    //         printf("%f\n", points1[i]);
+    //         negativCnt++;
+    //     }
+    // }
+    // for (int i = 0; i < nPoints2 * 128; i++) {
+    //     if (points2[i] < 0) {
+    //         printf("%f\n", points2[i]);
+    //         negativCnt++;
+    //     }
+    // }
+    // printf("negative count: %d\n", negativCnt);
+
+    // subtract_mean(points1, nPoints1);
+    // subtract_mean(points2, nPoints2);
+
+    // for (int i = 0; i < nPoints1; i++) {
+    //     printf("%f\n", points1[i]);
+    // }
+
+    // -- Generate some random points and similar random points to match with --
+
+    const int nPlanes = (int)log2(nPoints1);
+
+    // -- Generate hyperplanes --
+
+    // allocate hyperplanes
+    const int hyperplanesTableLen = nPlanes * vectorLength;
+    const int hyperplanesLen = numTables * hyperplanesTableLen;
+    float* hyperplanes = (float*)malloc(hyperplanesLen * sizeof(float));
+
+    // fill all hyperplanes
+    for (int table = 0; table < numTables; table++) {
+        float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
+        // create normalized hyperplanes represented by vectors of euclidean size 1
+        fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
     }
 
-//     // -- Generate some random points and similar random points to match with --
+    //  -- Arrays to organize groups --
 
-//     // points to be matched
-//     float* points1 = (float*)malloc(numTables * nPoints1 * vectorLength * sizeof(float));
-//     float* points2 = (float*)malloc(numTables * nPoints2 * vectorLength * sizeof(float));
+    const int nGroups = 1 << nPlanes;
+    // the group that each point falls into
+    const int indexGroupMapTableLen = nPoints1;
+    const int indexGroupMapLen = numTables * indexGroupMapTableLen;
+    int* indexGroupMap = (int*)malloc(indexGroupMapLen * sizeof(int));
+    // This code is clumsily written and should be fixed at a later point
+    // indexGroupMapTableLen should probably be removed as a parameter entirely
+    // but  enough for now
+    const int indexGroupMapTableLen2 = nPoints2;
+    const int indexGroupMapLen2 = numTables * indexGroupMapTableLen2;
+    int* indexGroupMap2 = (int*)malloc(indexGroupMapLen2 * sizeof(int));
 
-//     const int nPlanes = (int)log2(nPoints1);
+    // in case we're changing sizes
+    const int groupMapTableLen = nGroups;
+    const int groupMapLen = numTables * groupMapTableLen;
+    // amount of points that fall into each group
+    int* groupSizeMap = (int*)malloc(groupMapLen * sizeof(int));
+    // the starting index for each group in groupArray
+    int* groupIndexMap = (int*)malloc(groupMapLen * sizeof(int));
 
-//     fill_point_arrays(nPoints1, nPoints2, vectorLength, noiseScale, points1, points2);
-
-//     // -- Generate hyperplanes --
-
-//     // allocate hyperplanes
-//     const int hyperplanesTableLen = nPlanes * vectorLength;
-//     const int hyperplanesLen = numTables * hyperplanesTableLen;
-//     float* hyperplanes = (float*)malloc(hyperplanesLen * sizeof(float));
-
-//     // fill all hyperplanes
-//     for (int table = 0; table < numTables; table++) {
-//         float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
-//         // create normalized hyperplanes represented by vectors of euclidean size 1
-//         fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
-//     }
-
-//     //  -- Arrays to organize groups --
-
-//     const int nGroups = 1 << nPlanes;
-//     // the group that each point falls into
-//     const int indexGroupMapTableLen = nPoints1;
-//     const int indexGroupMapLen = numTables * indexGroupMapTableLen;
-//     int* indexGroupMap = (int*)malloc(indexGroupMapLen * sizeof(int));
-//     // This code is clumsily written and should be fixed at a later point
-//     // indexGroupMapTableLen should probably be removed as a parameter entirely
-//     // but  enough for now
-//     const int indexGroupMapTableLen2 = nPoints2;
-//     const int indexGroupMapLen2 = numTables * indexGroupMapTableLen2;
-//     int* indexGroupMap2 = (int*)malloc(indexGroupMapLen2 * sizeof(int));
-
-//     // in case we're changing sizes
-//     const int groupMapTableLen = nGroups;
-//     const int groupMapLen = numTables * groupMapTableLen;
-//     // amount of points that fall into each group
-//     int* groupSizeMap = (int*)malloc(groupMapLen * sizeof(int));
-//     // the starting index for each group in groupArray
-//     int* groupIndexMap = (int*)malloc(groupMapLen * sizeof(int));
-
-//     // Actual groups
-//     const int groupArrayTableLen = nPoints1;
-//     const int groupArrayLen = numTables * groupArrayTableLen;
-//     int* groupArray = (int*)malloc(groupArrayLen * sizeof(int));
+    // Actual groups
+    const int groupArrayTableLen = nPoints1;
+    const int groupArrayLen = numTables * groupArrayTableLen;
+    int* groupArray = (int*)malloc(groupArrayLen * sizeof(int));
 
 
-// #ifdef TIME_LSH
-//     struct timeval time;
-//     long startTime;
-//     long endTime;
-//     gettimeofday(&time, NULL);
-//     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-// #endif
+#ifdef TIME_LSH
+    struct timeval time;
+    long startTime;
+    long endTime;
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
-//     // -- Construct and store LSH tables --
-//     // future change: indexGroupMapTableLen can at this point just be nPoints1 * vectorLength
+    // -- Construct and store LSH tables --
+    // future change: indexGroupMapTableLen can at this point just be nPoints1 * vectorLength
 
-//     construct_lsh_tables(// input
-//                          vectorLength, numTables, nGroups,
-//                          nPoints1, points1,
-//                          nPlanes, hyperplanes,
-//                          indexGroupMap, indexGroupMapTableLen,
-//                          // output
-//                          groupArray,
-//                          groupSizeMap, groupIndexMap);
+    construct_lsh_tables(// input
+                         vectorLength, numTables, nGroups,
+                         nPoints1, points1,
+                         nPlanes, hyperplanes,
+                         indexGroupMap, indexGroupMapTableLen,
+                         // output
+                         groupArray,
+                         groupSizeMap, groupIndexMap);
 
-// #ifdef TIME_LSH
-//         gettimeofday(&time, NULL);
-//     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-//     printf("Constructing lsh tables:\n");
-//     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+#ifdef TIME_LSH
+        gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("Constructing lsh tables:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 
-//     gettimeofday(&time, NULL);
-//     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-// #endif
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
-// #ifdef TIME_LSH
-//     gettimeofday(&time, NULL);
-//     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-// #endif
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
-//     // calculate indices into lsh tables for the matching set
-//     // future change: indexGroupMapTableLen can at this point just be nPoints2 * vectorLength
-//     calculate_indexGroupMap(vectorLength, numTables, nPoints2, points2,
-//                             nPlanes, hyperplanes, indexGroupMapTableLen2, indexGroupMap2);
+    // calculate indices into lsh tables for the matching set
+    // future change: indexGroupMapTableLen can at this point just be nPoints2 * vectorLength
+    calculate_indexGroupMap(vectorLength, numTables, nPoints2, points2,
+                            nPlanes, hyperplanes, indexGroupMapTableLen2, indexGroupMap2);
 
-// #ifdef TIME_LSH
-//     gettimeofday(&time, NULL);
-//     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-//     printf("Calculating group mappings for the other point dataset:\n");
-//     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("Calculating group mappings for the other point dataset:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 
-//     gettimeofday(&time, NULL);
-//     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-// #endif
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
-//     // Array allocation
-//     int potentialMatchesMaxLen = nPoints2 * 64;
-//     int* potentialMatches = (int*)malloc(potentialMatchesMaxLen * sizeof(int));
-//     int* potentialMatchesIndices = (int*)malloc(nPoints2 * sizeof(int));
-//     int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
+    // Array allocation
+    int potentialMatchesMaxLen = nPoints2 * 64;
+    int* potentialMatches = (int*)malloc(potentialMatchesMaxLen * sizeof(int));
+    int* potentialMatchesIndices = (int*)malloc(nPoints2 * sizeof(int));
+    int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
 
-//     int nPotentialMatches = find_potential_matches( 
-//         //inputs
-//         numTables, nPoints1, nPoints2,
-//         indexGroupMap2, indexGroupMapTableLen2,
-//         groupArray, groupSizeMap, groupIndexMap,
-//         groupMapTableLen, potentialMatchesMaxLen,
-//         // outputs
-//         &potentialMatches, potentialMatchesIndices,
-//         potentialMatchesLengths);
+    int nPotentialMatches = find_potential_matches( 
+        //inputs
+        numTables, nPoints1, nPoints2,
+        indexGroupMap2, indexGroupMapTableLen2,
+        groupArray, groupSizeMap, groupIndexMap,
+        groupMapTableLen, potentialMatchesMaxLen,
+        // outputs
+        &potentialMatches, potentialMatchesIndices,
+        potentialMatchesLengths);
 
-// #ifdef TIME_LSH
-//     gettimeofday(&time, NULL);
-//     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-//     printf("Finding potential matches\n");
-//     printf("   - time: %.3f seconds\n", ((double)endTime - startTime)/1000);
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("Finding potential matches\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime)/1000);
 
-//     gettimeofday(&time, NULL);
-//     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-// #endif
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
-//     // Array allocation and initialization
-//     // holds the actual matches
-//     int* lshMatches = (int*)malloc(nPoints2 * sizeof(int));
-//     memset(lshMatches, -1, nPoints2 * sizeof(int));
-//     // holds the best match for each point we're finding a match for
-//     float* bestMatchDists = (float*)malloc(nPoints2 * sizeof(float));
-//     for (int i = 0; i < nPoints2; i++) {
-//         bestMatchDists[i] = 1e10;
-//     }
+    // Array allocation and initialization
+    // holds the actual matches
+    int* lshMatches = (int*)malloc(nPoints2 * sizeof(int));
+    memset(lshMatches, -1, nPoints2 * sizeof(int));
+    // holds the best match for each point we're finding a match for
+    float* bestMatchDists = (float*)malloc(nPoints2 * sizeof(float));
+    for (int i = 0; i < nPoints2; i++) {
+        bestMatchDists[i] = 1e10;
+    }
 
-//     // Holds the second best
-//     int* lshMatches2 = (int*)malloc(nPoints2 * sizeof(int));
-//     memset(lshMatches2, -1, nPoints2 * sizeof(int));
-//     // holds the best match for each point we're finding a match for
-//     float* bestMatchDists2 = (float*)malloc(nPoints2 * sizeof(float));
-//     for (int i = 0; i < nPoints2; i++) {
-//         bestMatchDists[i] = 1e10;
-//     }
+    // Holds the second best
+    int* lshMatches2 = (int*)malloc(nPoints2 * sizeof(int));
+    memset(lshMatches2, -1, nPoints2 * sizeof(int));
+    // holds the best match for each point we're finding a match for
+    float* bestMatchDists2 = (float*)malloc(nPoints2 * sizeof(float));
+    for (int i = 0; i < nPoints2; i++) {
+        bestMatchDists[i] = 1e10;
+    }
 
-//     match_points(vectorLength, nPoints1, nPoints2, points1, points2,
-//                  nPotentialMatches, potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
-//                  lshMatches, bestMatchDists,
-//                  lshMatches2, bestMatchDists2);
+    match_points(vectorLength, nPoints1, nPoints2, points1, points2,
+                 nPotentialMatches, potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
+                 lshMatches, bestMatchDists,
+                 lshMatches2, bestMatchDists2);
 
-// #ifdef TIME_LSH
-//     gettimeofday(&time, NULL);
-//     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-//     printf("Matching potential matches\n");
-//     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
-// #endif
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("Matching potential matches\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+#endif
 
-//     // - Check how many matches were correct -
-//     int correct = 0;
-//     for (int i = 0; i < nPoints2; i++) {
-//         correct += lshMatches[i] == i;
-//     }
-//     double correctRatio = ((double) correct) / nPoints2;
-//     printf("Correct ratio: %f\n", correctRatio);
+    int* tmpGT;
+    int groundTruthLen = read_vector_file2(argv[3], &tmpGT) / 100;
+    int* groundTruth = (int*) malloc(groundTruthLen * sizeof(int));
+    for (int i = 0; i < groundTruthLen; i++) {
+        groundTruth[i] = tmpGT[100*i];
+    }
+    free(tmpGT);
+    
+    // printf("Base points:               %d\n", nPoints1);
+    // printf("Query points:              %d\n", nPoints2);
+    // printf("Ground truth table length: %d\n", groundTruthLen);
+    // for (int i = 0; i < groundTruthLen; i++) {
+    //     // printf("%d\n", groundTruth[i]);
+    //     float diff = 0;
+    //     float* vector1 = points2 + i*vectorLength;
+    //     float* vector2 = points1 + groundTruth[i]*128;
+    //     for (int j = 0; j < vectorLength; j++) {
+    //         diff += (vector1[j] - vector2[j]) * (vector1[j] - vector2[j]);
+    //     }
+    //     diff = sqrt(diff);
+    //     printf("%f\n", diff);
+    // }
+    // for (int i = 0; i < vectorLength; i++) {
+    //     printf("%f, %f\n", points2[3*128+i], points1[groundTruth[3]*128 + i]);
+    // }
 
-//     // // average distances from second best
-//     // printf("\n");
-//     // double avgDist1 = 0;
-//     // double avgDist2 = 0;
-//     // double avgDist3 = 0;
-//     // for (int i = 0; i < nPoints2; i++) {
-//     //     if (bestMatchDists[i] != 1e10 && bestMatchDists2[i] != 1e10) {
-//     //         double diff = bestMatchDists[i] - bestMatchDists2[i];
-//     //         diff = diff * diff;
-//     //         avgDist1 += diff;
-//     //         avgDist2 += diff * (lshMatches[i] == i);
-//     //         avgDist3 += diff * (lshMatches[i] != i);
-//     //     }
-//     // }
-//     // avgDist1 /= nPoints2;
-//     // avgDist2 /= correct;
-//     // avgDist3 /= (nPoints2 - correct);
+    // - Check how many matches were correct -
+    int correct = 0;
+    for (int i = 0; i < nPoints2; i++) {
+        correct += lshMatches[i] == groundTruth[i];
+    }
+    double correctRatio = ((double) correct) / nPoints2;
+    printf("Correct ratio: %f\n", correctRatio);
 
-//     // printf("Average squared distance from second best: %e\n", avgDist1);
-//     // printf("For correct matches:                       %e\n", avgDist2);
-//     // printf("For incorrect matches:                     %e\n", avgDist3);
-//     // printf("(Not counting when only one match was found)\n");
+    free(points1);
+    free(points2);
+    free(hyperplanes);
+    free(groundTruth);
 
-//     free(points1);
-//     free(points2);
-//     free(hyperplanes);
+    free(indexGroupMap);
+    free(indexGroupMap2);
+    free(groupSizeMap);
+    free(groupIndexMap);
+    free(groupArray);
 
-//     free(indexGroupMap);
-//     free(indexGroupMap2);
-//     free(groupSizeMap);
-//     free(groupIndexMap);
-//     free(groupArray);
+    free(lshMatches);
+    free(bestMatchDists);
+    free(lshMatches2);
+    free(bestMatchDists2);
 
-//     free(lshMatches);
-//     free(bestMatchDists);
-//     free(lshMatches2);
-//     free(bestMatchDists2);
-
-//     free(potentialMatches);
-//     free(potentialMatchesIndices);
-//     free(potentialMatchesLengths);
+    free(potentialMatches);
+    free(potentialMatchesIndices);
+    free(potentialMatchesLengths);
 }
 
 void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, float noiseScale,

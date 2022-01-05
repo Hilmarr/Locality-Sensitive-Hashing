@@ -2,7 +2,7 @@
 #include <iostream>
 
 //  -- Taking care to not allocate more memory than necessary --
-int read_vector_file(char* fPath, void** arr) {
+int read_vector_file(char* fPath, int** arr) {
     FILE* fp = fopen(fPath, "rb");
     if (fp == NULL) {
         fprintf(stderr, "Error opening %s for reading\n", fPath);
@@ -35,19 +35,22 @@ int read_vector_file(char* fPath, void** arr) {
         // read nr of elements in component
         int d = 0;
         ret = fread(&d, 4, 1, fp);
+        float* points2;
         if (ret == 0) break;
         // move component into memory
         ret = fread(data_ptr, 4, d, fp);
         data_ptr += d;
     }
 
-    *arr = (void*)data;
+    *arr = data;
+
+    fclose(fp);
 
     return nElements;
 }
 
 // -- Allocating enough memory for the entire file --
-int read_vector_file2(char* fPath, void** arr) {
+int read_vector_file2(char* fPath, int** arr) {
     FILE* fp = fopen(fPath, "rb");
     if (fp == NULL) {
         fprintf(stderr, "Error opening %s for reading\n", fPath);
@@ -77,7 +80,9 @@ int read_vector_file2(char* fPath, void** arr) {
         data_ptr += d;
     }
 
-    *arr = (void*)data;
+    *arr = data;
+
+    fclose(fp);
 
     return nElements;
 }

@@ -42,6 +42,8 @@ int read_vector_file(char* fPath, void** arr) {
     
     *arr = (void*) data;
 
+    fclose(fp);
+
     return nElements;
 }
 
@@ -77,6 +79,8 @@ int read_vector_file2(char* fPath, void** arr) {
     }
 
     *arr = (void*) data;
+
+    fclose(fp);
 
     return nElements;
 }

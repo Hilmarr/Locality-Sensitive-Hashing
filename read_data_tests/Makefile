@@ -16,6 +16,11 @@ run_read_data: read_data
 	../test_data/siftsmall/siftsmall_base.fvecs \
 	../test_data/siftsmall/siftsmall_groundtruth.ivecs
 
+run_read_data_valgrind: read_data
+	valgrind ./read_data \
+	../test_data/siftsmall/siftsmall_base.fvecs \
+	../test_data/siftsmall/siftsmall_groundtruth.ivecs
+
 run_func_read_data: func_read_data
 	./func_read_data ../test_data/siftsmall/siftsmall_base.fvecs
 
