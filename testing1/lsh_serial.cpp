@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
     int nPoints1 = 0;     // number of points in the first dataset
     int nPoints2 = 0;       // number of points in the second dataset
     const int vectorLength = 128;
-    const int numTables = 32;
+    const int numTables = 8;
 
     // -- Read points from file --
 
@@ -356,7 +356,7 @@ int main(int argc, char** argv) {
 
     // -- Generate some random points and similar random points to match with --
 
-    const int nPlanes = (int)log2(nPoints1);
+    const int nPlanes = (int) log2(nPoints1);
 
     // -- Generate hyperplanes --
 
@@ -451,7 +451,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Array allocation
-    int potentialMatchesMaxLen = nPoints2 * 64;
+    int potentialMatchesMaxLen = nPoints2 * 128;
     int* potentialMatches = (int*)malloc(potentialMatchesMaxLen * sizeof(int));
     int* potentialMatchesIndices = (int*)malloc(nPoints2 * sizeof(int));
     int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
@@ -631,6 +631,7 @@ void calculate_hash_values(
             float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
             // calculate point * hplane
             float vecMul = 0;
+            // for (int k = (j%8)*16; k < (j%8)*16 + 16; k++) {
             for (int k = 0; k < vectorLength; k++) {
                 vecMul += point[k] * hplane[k];
             }
