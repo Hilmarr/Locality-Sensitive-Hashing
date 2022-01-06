@@ -2,11 +2,11 @@ CC = g++
 # CFLAGS = -Wall -Wextra -Wpedantic
 # CFLAGS = -O3 -Wall -Wextra -Wpedantic
 CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic # -g -pg
-FILES = lsh_serial
+FILES = lsh_serial lsh_serial_random_points
 
 .PHONY: default all clean profile_lsh
 
-default: lsh_serial
+default: all
 
 all: $(FILES)
 
@@ -33,7 +33,6 @@ run_lsh_serial_sift: lsh_serial
 	../test_data/sift/sift_base.fvecs \
 	../test_data/sift/sift_query.fvecs \
 	../test_data/sift/sift_groundtruth.ivecs
-
 
 clean:
 	rm -f $(FILES) *.o

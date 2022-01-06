@@ -297,62 +297,18 @@ void subtract_mean_of_1_from_both(
 
 int main(int argc, char** argv) {
     srand(0);
-    int nPoints1 = 0;     // number of points in the first dataset
-    int nPoints2 = 0;       // number of points in the second dataset
+    int nPoints1 = 1000000;     // number of points in the first dataset
+    int nPoints2 = 10000;       // number of points in the second dataset
     const int vectorLength = 128;
+    const float noiseScale = 0.3;
     const int numTables = 16;
 
     // -- Read points from file --
 
-    // Check number of arguments
-    if (argc < 4) {
-        fprintf(stderr, "Program needs to be given 3 files as arguments:\n");
-        fprintf(stderr, " 1. .fvec vector file with feature descriptors (base set)\n");
-        fprintf(stderr, " 2. .fvec vector file with feature descriptors (query set)\n");
-        fprintf(stderr, " 3. .ivec vector file (Ground truth)\n");
-        return -1;
-    }
+    float* points1 = (float*)malloc(nPoints1 * vectorLength * sizeof(float));
+    float* points2 = (float*)malloc(nPoints2 * vectorLength * sizeof(float));
+    fill_point_arrays(nPoints1, nPoints2, vectorLength, noiseScale, points1, points2);
 
-    // printf("\n\n");
-    // for (int i = 1; i < 4; i++) {
-    //     printf("%s\n", argv[i]);
-    // }
-
-    int* tmp1;
-    int* tmp2;
-
-    // points to be matched
-    nPoints1 = read_vector_file2(argv[1], &tmp1) / 128;
-    nPoints2 = read_vector_file2(argv[2], &tmp2) / 128;
-
-    // printf("nPoints1=%d,  nPoints2=%d\n")
-
-    float* points1 = (float*) tmp1;
-    float* points2 = (float*) tmp2;
-
-    subtract_mean_of_1_from_both(nPoints1, nPoints2, points1, points2);
-
-    // int negativCnt = 0;
-    // for (int i = 0; i < nPoints1*128; i++) {
-    //     if (points1[i] < 0) {
-    //         printf("%f\n", points1[i]);
-    //         negativCnt++;
-    //     }
-    // }
-    // for (int i = 0; i < nPoints2 * 128; i++) {
-    //     if (points2[i] < 0) {
-    //         printf("%f\n", points2[i]);
-    //         negativCnt++;
-    //     }
-    // }
-    // printf("negative count: %d\n", negativCnt);
-
-    // subtract_mean(points1, nPoints1);
-    // subtract_mean(points2, nPoints2);
-
-    // for (int i = 0; i < nPoints1; i++) {
-    //     printf("%f\n", points1[i]);
-    // }
 
     // -- Generate some random points and similar random points to match with --
 
@@ -507,44 +463,17 @@ int main(int argc, char** argv) {
     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 #endif
 
-    int* tmpGT;
-    int groundTruthLen = read_vector_file2(argv[3], &tmpGT) / 100;
-    int* groundTruth = (int*) malloc(groundTruthLen * sizeof(int));
-    for (int i = 0; i < groundTruthLen; i++) {
-        groundTruth[i] = tmpGT[100*i];
-    }
-    free(tmpGT);
-    
-    // printf("Base points:               %d\n", nPoints1);
-    // printf("Query points:              %d\n", nPoints2);
-    // printf("Ground truth table length: %d\n", groundTruthLen);
-    // for (int i = 0; i < groundTruthLen; i++) {
-    //     // printf("%d\n", groundTruth[i]);
-    //     float diff = 0;
-    //     float* vector1 = points2 + i*vectorLength;
-    //     float* vector2 = points1 + groundTruth[i]*128;
-    //     for (int j = 0; j < vectorLength; j++) {
-    //         diff += (vector1[j] - vector2[j]) * (vector1[j] - vector2[j]);
-    //     }
-    //     diff = sqrt(diff);
-    //     printf("%f\n", diff);
-    // }
-    // for (int i = 0; i < vectorLength; i++) {
-    //     printf("%f, %f\n", points2[3*128+i], points1[groundTruth[3]*128 + i]);
-    // }
-
     // - Check how many matches were correct -
     int correct = 0;
     for (int i = 0; i < nPoints2; i++) {
-        correct += lshMatches[i] == groundTruth[i];
+        correct += lshMatches[i] == i;
     }
-    double correctRatio = ((double) correct) / nPoints2;
+    double correctRatio = ((double)correct) / nPoints2;
     printf("Correct ratio: %f\n", correctRatio);
 
     free(points1);
     free(points2);
     free(hyperplanes);
-    free(groundTruth);
 
     free(indexGroupMap);
     free(indexGroupMap2);
