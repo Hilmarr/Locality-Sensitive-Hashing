@@ -267,8 +267,8 @@ int main() {
     // -- Generate some random points and similar random points to match with --
 
     // points to be matched
-    float* points1 = (float*)malloc(numTables * nPoints1 * vectorLength * sizeof(float));
-    float* points2 = (float*)malloc(numTables * nPoints2 * vectorLength * sizeof(float));
+    float* points1 = (float*)malloc(nPoints1 * vectorLength * sizeof(float));
+    float* points2 = (float*)malloc(nPoints2 * vectorLength * sizeof(float));
 
     const int nPlanes = (int)log2(nPoints1);
 
