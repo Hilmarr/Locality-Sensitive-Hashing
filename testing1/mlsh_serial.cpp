@@ -314,14 +314,14 @@ void subtract_mean_of_1_from_both(
     // }
 }
 
-const int TOL = 20;
+const int TOL = 100;
 
 int main(int argc, char** argv) {
     srand(0);
     int nPoints1 = 0;     // number of points in the first dataset
     int nPoints2 = 0;       // number of points in the second dataset
     const int vectorLength = 128;
-    const int numTables = 6;
+    const int numTables = 32;
 
     // -- Read points from file --
 
@@ -456,8 +456,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Array allocation
-    // remember to change back to something higher
-    int potentialMatchesMaxLen = nPoints2 * 256;
+    int potentialMatchesMaxLen = nPoints2 * 1<<14;
     int* potentialMatches = (int*)malloc(potentialMatchesMaxLen * sizeof(int));
     int* potentialMatchesIndices = (int*)malloc(nPoints2 * sizeof(int));
     int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
@@ -750,12 +749,11 @@ void calculate_indexGroupMap_and_closeToHP(
     int* indexGroupMap, int* closeToHP)
 {
     const int hyperplanesTableLen = nPlanes * vectorLength;
-    const int closeToHPTableLen = nPoints * nPlanes;
 
     for (int table = 0; table < numTables; table++) {
         float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
-        int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
-        int* closeToHP2 = closeToHP + table * closeToHPTableLen;
+        int* indexGroupMap2 = indexGroupMap + table * nPoints;
+        int* closeToHP2 = closeToHP + table * nPoints;
         // - Match points -
         calculate_hash_values_and_closeToHP(
             vectorLength, nPoints, points,
@@ -844,7 +842,7 @@ int find_potential_matches(
                     if (totalMatchCount >= potentialMatchesMaxLen) {
                         potentialMatchesMaxLen =
                             double_int_arr_size(potentialMatches, potentialMatchesMaxLen);
-                        // printf(" maxLen = %d\n", potentialMatchesMaxLen);
+                        printf(" maxLen = %d\n", potentialMatchesMaxLen);
                     }
 
                     (*potentialMatches)[totalMatchCount] = idx;
