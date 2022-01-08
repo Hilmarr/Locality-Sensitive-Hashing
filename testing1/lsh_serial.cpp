@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
     int nPoints1 = 0;     // number of points in the first dataset
     int nPoints2 = 0;       // number of points in the second dataset
     const int vectorLength = 128;
-    const int numTables = 16;
+    const int numTables = 2;
 
     // -- Read points from file --
 

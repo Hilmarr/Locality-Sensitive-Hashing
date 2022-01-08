@@ -314,14 +314,17 @@ void subtract_mean_of_1_from_both(
     // }
 }
 
-const int TOL = 100;
+// Distance from hyperplane tolerance for checking other side of hyperplane
+const int TOL = 200;
+// distance of hyperplanes from origin
+const int distFromO = 20;
 
 int main(int argc, char** argv) {
     srand(0);
     int nPoints1 = 0;     // number of points in the first dataset
     int nPoints2 = 0;       // number of points in the second dataset
     const int vectorLength = 128;
-    const int numTables = 32;
+    const int numTables = 16;
 
     // -- Read points from file --
 
@@ -456,7 +459,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Array allocation
-    int potentialMatchesMaxLen = nPoints2 * 1<<14;
+    int potentialMatchesMaxLen = nPoints2 * 1<<15;
     int* potentialMatches = (int*)malloc(potentialMatchesMaxLen * sizeof(int));
     int* potentialMatchesIndices = (int*)malloc(nPoints2 * sizeof(int));
     int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
@@ -546,6 +549,33 @@ int main(int argc, char** argv) {
     }
     double correctRatio = ((double) correct) / nPoints2;
     printf("Correct ratio: %f\n", correctRatio);
+
+    long unsigned int diff_both = 0;
+    long unsigned int diff_correct = 0;
+    long unsigned int diff_incorrect = 0;
+    for (int i = 0; i < nPoints2; i++) {
+        double diff = 0;
+        float* p_query = &points2[i*128];
+        float* p_base = &points1[groundTruth[i] * 128];
+        for (int j = 0; j < 128; j++) {
+            diff += (p_query[i] - p_base[i]) * (p_query[i] - p_base[i]);
+        }
+        diff = sqrt(diff);
+        diff_both += diff;
+        if (lshMatches[i] == groundTruth[i]) {
+            diff_correct += (int) diff;
+        } else {
+            diff_incorrect += (int) diff;
+        }
+    }
+    int incorrect = nPoints2 - correct;
+
+    printf("Average distance of best fits: %f\n",
+           ((double)diff_both) / nPoints2);
+    printf("Average distance correctly classified points: %f\n",
+        ((double)diff_correct) / correct);
+    printf("Average distance incorrectly classified points: %f\n",
+           ((double)diff_incorrect) / incorrect);
 
     free(points1);
     free(points2);
@@ -643,7 +673,7 @@ void calculate_hash_values(
                 vecMul += point[k] * hplane[k];
             }
             // set i'th bit to one if point is on "positive" side of hyperplane
-            if (vecMul > 0) {
+            if (vecMul > 20) {
                 hashcode = hashcode | (1 << j);
             }
         }
@@ -672,10 +702,10 @@ void calculate_hash_values_and_closeToHP(
                 vecMul += point[k] * hplane[k];
             }
             // set i'th bit to one if point is on "positive" side of hyperplane
-            if (vecMul > 0) {
+            if (vecMul > distFromO) {
                 hashcode = hashcode | (1 << j);
             }
-            closeToHP[i] += (vecMul * vecMul < TOL) << j;
+            closeToHP[i] += (vecMul * vecMul - distFromO * distFromO < TOL) << j;
         }
         indexGroupMap[i] = hashcode;  // save the hashcode
     }
