@@ -63,7 +63,7 @@ void calculate_hash_values(
     // input
     int vectorLength,
     int nPoints, float* __restrict__ points,
-    int nPlanes, float* __restrict__ hyperplanes,
+    int nPlanes, float* __restrict__ hyperplanes, float* __restrict__ distsFromO,
     // output
     int* __restrict__ indexGroupMap);
 
@@ -71,7 +71,7 @@ void calculate_hash_values_and_closeToHP(
     // input
     int vectorLength,
     int nPoints, float* points,
-    int nPlanes, float* hyperplanes,
+    int nPlanes, float* hyperplanes, float* distsFromO,
     // output
     int* indexGroupMap, int* closeToHP);
 
@@ -131,7 +131,7 @@ void calculate_indexGroupMap(
     // input
     int vectorLength, int numTables,
     int nPoints, float* __restrict__ points,
-    int nPlanes, float* __restrict__ hyperplanes,
+    int nPlanes, float* __restrict__ hyperplanes, float* distsFromO,
     int indexGroupMapTableLen,
     // output
     int* __restrict__ indexGroupMap);
@@ -140,7 +140,7 @@ void calculate_indexGroupMap_and_closeToHP(
     // input
     int vectorLength, int numTables,
     int nPoints, float* points,
-    int nPlanes, float* hyperplanes,
+    int nPlanes, float* hyperplanes, float* distsFromO,
     int indexGroupMapTableLen,
     // output
     int* indexGroupMap, int* closeToHP);
@@ -171,7 +171,7 @@ void calculate_indexGroupMap_and_closeToHP(
 void construct_lsh_tables(  // input
     int vectorLength, int numTables, int nGroups,
     int nPoints, float* __restrict__ points,
-    int nPlanes, float* __restrict__ hyperplanes,
+    int nPlanes, float* __restrict__ hyperplanes, float* __restrict__ distsFromO,
     int* __restrict__ indexGroupMap, int indexGroupMapTableLen,
     // output
     int* __restrict__ groupArray,
@@ -258,16 +258,16 @@ int find_potential_matches(
  * @param bestMatchDists2 : Output - Distances between points for every match
  *                                  in lshMatches2
  */
-    void match_points(
-        // inputs
-        int vectorLength, int nPoints1, int nPoints2,
-        float* __restrict__ points1, float* __restrict__ points2,
-        int nPotentialMatches,
-        int* __restrict__ potentialMatches, int* __restrict__ potentialMatchesIndices,
-        int* __restrict__ potentialMatchesLengths,
-        // outputs
-        int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
-        int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2);
+void match_points(
+    // inputs
+    int vectorLength, int nPoints1, int nPoints2,
+    float* __restrict__ points1, float* __restrict__ points2,
+    int nPotentialMatches,
+    int* __restrict__ potentialMatches, int* __restrict__ potentialMatchesIndices,
+    int* __restrict__ potentialMatchesLengths,
+    // outputs
+    int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
+    int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2);
 
 int double_int_arr_size(int** arr, int curSize) {
     int newSize = 2*curSize;
@@ -320,8 +320,6 @@ void subtract_mean_of_1_from_both(
 const int TOL = 200;
 // distance of hyperplanes from origin
 const float distFromO = 20;
-
-// float* distsFromO;
 
 int main(int argc, char** argv) {
     srand(0);
@@ -378,8 +376,8 @@ int main(int argc, char** argv) {
         fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
     }
 
-    // distsFromO = (float*) malloc(nPlanes * numTables * sizeof(float));
-    // fill_with_random_numbers(nPlanes, distsFromO, distFromO);
+    float* distsFromO = (float*) malloc(nPlanes * numTables * sizeof(float));
+    fill_with_random_numbers(nPlanes, distsFromO, distFromO);
     // for (int i = 0; i < nPlanes; i++) {
     //     printf("%f\n", distsFromO[i]);
     // }
@@ -432,7 +430,7 @@ int main(int argc, char** argv) {
     construct_lsh_tables(// input
                          vectorLength, numTables, nGroups,
                          nPoints1, points1,
-                         nPlanes, hyperplanes,
+                         nPlanes, hyperplanes, distsFromO,
                          indexGroupMap, indexGroupMapTableLen,
                          // output
                          groupArray,
@@ -455,8 +453,10 @@ int main(int argc, char** argv) {
 
     // calculate indices into lsh tables for the matching set
     // future change: indexGroupMapTableLen can at this point just be nPoints2 * vectorLength
-    calculate_indexGroupMap_and_closeToHP(vectorLength, numTables, nPoints2, points2,
-                            nPlanes, hyperplanes, indexGroupMapTableLen2, indexGroupMap2, closeToHP);
+    calculate_indexGroupMap_and_closeToHP(
+                            vectorLength, numTables, nPoints2, points2,
+                            nPlanes, hyperplanes, distsFromO,
+                            indexGroupMapTableLen2, indexGroupMap2, closeToHP);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -590,7 +590,7 @@ int main(int argc, char** argv) {
     free(points1);
     free(points2);
     free(hyperplanes);
-    // free(distsFromO);
+    free(distsFromO);
     free(groundTruth);
 
     free(indexGroupMap);
@@ -610,11 +610,11 @@ int main(int argc, char** argv) {
     free(potentialMatchesLengths);
 }
 
-// float fill_with_random_numbers(int nPoints, float* points, float absMax) {
-//     for (int i = 0; i < nPoints; i++) {
-//         points[i] = ((float)rand() / (RAND_MAX/(absMax*2))) - absMax;
-//     }
-// }
+float fill_with_random_numbers(int nPoints, float* points, float absMax) {
+    for (int i = 0; i < nPoints; i++) {
+        points[i] = ((float)rand() / (RAND_MAX/(absMax*2))) - absMax;
+    }
+}
 
 void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, float noiseScale,
                            float* __restrict__ points1, float* __restrict__ points2) {
@@ -669,7 +669,7 @@ void calculate_hash_values(
     // input
     int vectorLength,
     int nPoints, float* __restrict__ points,
-    int nPlanes, float* __restrict__ hyperplanes,
+    int nPlanes, float* __restrict__ hyperplanes, float* __restrict__ distsFromO,
     // output
     int* __restrict__ indexGroupMap)
 {
@@ -689,7 +689,7 @@ void calculate_hash_values(
                 vecMul += point[k] * hplane[k];
             }
             // set i'th bit to one if point is on "positive" side of hyperplane
-            if (vecMul > distFromO) {
+            if (vecMul > distsFromO[j]) {
                 hashcode = hashcode | (1 << j);
             }
         }
@@ -701,7 +701,7 @@ void calculate_hash_values_and_closeToHP(
     // input
     int vectorLength,
     int nPoints, float* points,
-    int nPlanes, float* hyperplanes,
+    int nPlanes, float* hyperplanes, float* distsFromO,
     // output
     int* indexGroupMap, int* closeToHP)
 {
@@ -719,10 +719,10 @@ void calculate_hash_values_and_closeToHP(
                 vecMul += point[k] * hplane[k];
             }
             // set i'th bit to one if point is on "positive" side of hyperplane
-            if (vecMul > distFromO) {
+            if (vecMul > distsFromO[j]) {
                 hashcode = hashcode | (1 << j);
             }
-            closeToHP[i] += (vecMul * vecMul - distFromO * distFromO < TOL) << j;
+            closeToHP[i] += (vecMul * vecMul - distsFromO[j] * distsFromO[j] < TOL) << j;
         }
         indexGroupMap[i] = hashcode;  // save the hashcode
     }
@@ -771,7 +771,7 @@ void calculate_indexGroupMap(
     // input
     int vectorLength, int numTables,
     int nPoints, float* __restrict__ points,
-    int nPlanes, float* __restrict__ hyperplanes,
+    int nPlanes, float* __restrict__ hyperplanes, float* distsFromO,
     int indexGroupMapTableLen,
     // output
     int* __restrict__ indexGroupMap)
@@ -779,10 +779,11 @@ void calculate_indexGroupMap(
     const int hyperplanesTableLen = nPlanes * vectorLength;
     for (int table = 0; table < numTables; table++) {
         float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
+        float* distsFromO2 = distsFromO + table * nPlanes;
         int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
         // - Match points -
         calculate_hash_values(vectorLength, nPoints, points,
-                                nPlanes, hyperplanes2, indexGroupMap2);
+                                nPlanes, hyperplanes2, distsFromO2, indexGroupMap2);
     }
 }
 
@@ -790,7 +791,7 @@ void calculate_indexGroupMap_and_closeToHP(
     // input
     int vectorLength, int numTables,
     int nPoints, float* points,
-    int nPlanes, float* hyperplanes,
+    int nPlanes, float* hyperplanes, float* distsFromO,
     int indexGroupMapTableLen,
     // output
     int* indexGroupMap, int* closeToHP)
@@ -799,19 +800,20 @@ void calculate_indexGroupMap_and_closeToHP(
 
     for (int table = 0; table < numTables; table++) {
         float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
+        float* distsFromO2 = distsFromO + table * nPlanes;
         int* indexGroupMap2 = indexGroupMap + table * nPoints;
         int* closeToHP2 = closeToHP + table * nPoints;
         // - Match points -
         calculate_hash_values_and_closeToHP(
             vectorLength, nPoints, points,
-            nPlanes, hyperplanes2, indexGroupMap2, closeToHP2);
+            nPlanes, hyperplanes2, distsFromO2, indexGroupMap2, closeToHP2);
     }
 }
 
 void construct_lsh_tables(  // input
     int vectorLength, int numTables, int nGroups,
     int nPoints, float* __restrict__ points,
-    int nPlanes, float* __restrict__ hyperplanes,
+    int nPlanes, float* __restrict__ hyperplanes, float* __restrict__ distsFromO,
     int* __restrict__ indexGroupMap, int indexGroupMapTableLen,
     // output
     int* __restrict__ groupArray,
@@ -824,7 +826,8 @@ void construct_lsh_tables(  // input
 
     // calculate indices into lsh tables for the original set
     calculate_indexGroupMap(vectorLength, numTables, nPoints, points,
-                           nPlanes, hyperplanes, indexGroupMapTableLen, indexGroupMap);
+                           nPlanes, hyperplanes, distsFromO,
+                           indexGroupMapTableLen, indexGroupMap);
 
     // temporary values when creating groupIndexMap
     int* groupIndexMapTails = (int*)malloc(groupMapLen * sizeof(int));
