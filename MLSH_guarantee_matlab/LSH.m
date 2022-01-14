@@ -156,33 +156,39 @@ hashValuesTime2 = toc(hashValuesStart2);
 % end
 
 % Should later be naturally extended like an arraylist
-groupMapExt = zeros(nPoints*5);
+groupMapExt = zeros(nPoints*5,1);
 groupMapExtIndices = zeros(nPoints + 1);
 
 cnt = 1;
 for i = 1:nPoints
-    hashcode = indexGroupMap(i);
+    hashcode = indexGroupMap(i) - 1;
+%     fprintf("hashcode%d = %d\n", i, hashcode);
     groupMapExtIndices(i) = cnt;
-    groupMapExt(cnt) = hashcode;
+    groupMapExt(cnt) = hashcode + 1;
     cnt = cnt + 1;
     % Replace this with a recursive function that can also find
     % combination of these values
     for j = 1:nPlanes
         if (sqrdDists(i,j) < threshold)
-            groupMapExt(cnt) = bitxor(hashcode, bitshift(1, j-1));
+            groupMapExt(cnt) = bitxor(hashcode, bitshift(1, j-1)) + 1;
+%             fprintf("  j=%d, hashcode=%d\n", j, groupMapExt(cnt));
             cnt = cnt + 1;
         end
     end
+%     fprintf("\n");
 end
 groupMapExtIndices(nPoints + 1) = cnt;
 
-for i = 1:nPoints
-    fprintf("Point %d hash codes:\n", i);
-    for j = groupMapExtIndices(i):(groupMapExtIndices(i+1)-1)
-        fprintf("  %s\n", dec2bin(groupMapExt(j), nPlanes));
-    end
-    fprintf("\n");
-end
+% for i = 1:nPoints
+%     fprintf("Point %d hash codes:\n", i);
+% %     for j = groupMapExtIndices(i):(groupMapExtIndices(i+1)-1)
+% %         fprintf("  %s\n", dec2bin(groupMapExt(j), nPlanes));
+% %     end
+%     for j = groupMapExtIndices(i):(groupMapExtIndices(i+1)-1)
+%         fprintf("  %d\n", groupMapExt(j));
+%     end
+%     fprintf("\n");
+% end
 
 
 
@@ -190,24 +196,31 @@ end
 matching_lsh = zeros(nPoints, 1);
 
 for i = 1:nPoints
-    % Find table and elements in points1 to match with
-    shortestDist = 1e10;
-    hashcode = indexGroupMap(i);
-    size = groupSizeMap(hashcode);
-    startIdx = groupIndexMap(hashcode);
     
-    % Match the points
-    for j = startIdx:(startIdx+size-1)
-        % Take euclidean distance between the vector
-        idx = groupArray(j);
-        diff = sum((points2(i,:) - points1(idx,:)) .^ 2);
-        % If euclidean distance is better than the best match,
-        % we have a new best match
-        if (diff < shortestDist)
-            shortestDist = diff;
-            match = idx;
+    shortestDist = 1e10;
+    
+    for k = groupMapExtIndices(i):(groupMapExtIndices(i+1)-1)
+        
+        % Find table and elements in points1 to match with
+        hashcode = groupMapExt(k);
+        size = groupSizeMap(hashcode);
+        startIdx = groupIndexMap(hashcode);
+
+        % Match the points
+        for j = startIdx:(startIdx+size-1)
+            % Take euclidean distance between the vector
+            idx = groupArray(j);
+            diff = sum((points2(i,:) - points1(idx,:)) .^ 2);
+            % If euclidean distance is better than the best match,
+            % we have a new best match
+            if (diff < shortestDist)
+                shortestDist = diff;
+                match = idx;
+%                 fprintf("i=%d, match=%d\n",i,idx);
+            end
         end
     end
+    
     if (shortestDist ~= 1e10)
         matching_lsh(i) =  match;
     end
