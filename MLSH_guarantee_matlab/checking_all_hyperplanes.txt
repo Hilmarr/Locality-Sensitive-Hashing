@@ -21,7 +21,7 @@ Check combinations:
 	...
 
 
-
+-------------------------------------------------------------
 
 Step 1.
 pnt1 < T?, pnt2 < T ?, ..., pntN < T
@@ -49,7 +49,7 @@ Can also shorten search since if number a can't match with larger number c, then
 Combine the two approaches listed here
 
 
-
+-------------------
 Or perhaps, alternatively
 
 Try to see if all points less than threshold together are less than threshold
@@ -58,8 +58,16 @@ Then check recursively for each subset of two less
 etc etc
 
 This is probably more time consuming
+-------------------
 
 
+
+
+-------------------------------------------------------------------------------
+                             pseudocode
+-------------------------------------------------------------------------------
+
+(Failed attempt 1)
 
 function boxes = find_nearby_boxes(hashcode, sqrdDists, threshold, nPlanes)
 	[sd, orig_indices] = sort(sqrdDists);
@@ -102,6 +110,7 @@ end
 
 
 
+(attempt 2 recursive)
 
 findNeighborsAux(hashcode, sqrdDists, threshold, smallLen, indexCombinations, indexCombinationsDists)
 	idxCombs = {}
@@ -115,7 +124,7 @@ findNeighborsAux(hashcode, sqrdDists, threshold, smallLen, indexCombinations, in
 	for i = 1:smallLen
 		for j = 1:neighborsFound
 			dist = idxCombDists[j] + sqrdDists[i];
-			if (idxCombDists[j] + sqrdDists[i] < threshold)
+			if (dist < threshold)
 				idxCombsDists.add(dist)
 				idxCombs.add(setplus(i + idxComb[j]));
 				neighborsFound++;
@@ -126,15 +135,16 @@ findNeighborsAux(hashcode, sqrdDists, threshold, smallLen, indexCombinations, in
 	indexCombinations = setplus(indexCombinations, idxCombs);
 	indexCombinationsDists = setplus(indexCombinations, idxCombsDists);
 end
-	
-	
-	
+		
 
 findNeighbors(hashcode, sqrdDists, threshold, nPlanes, indexCombinations, indexCombinationsDists)
-	[sd, orig_indices] = sort(sqrdDists);
+	[sd, orig_indices] = sort(sqrdDists); // old not necessary
+
+	indexCombinations = {};
+	indexCombinationsDists = {};
 	
 	smallLen = nPlanes
-	for i = 1:nPlanes
+	for i = 1:smallLen
 		if (sqrdDists(i) < threshold)
 			smallLen = smallLen + 1;
 			indexCombinations.add({i});
@@ -144,11 +154,83 @@ findNeighbors(hashcode, sqrdDists, threshold, nPlanes, indexCombinations, indexC
 		end
 	end
 
-	indexCombinations = {};
-	indexCombinationsDists = {};
 	neighborsFound = findNeigborsAux(hashcode, sqrdDists, threshold, smallLen, indexCombinations, indexCombinationsDists);
+
+	switch indicies
 end
 		
+
+
+(attempt 3, iterative, from end)
+
+findNeighbors(hashcode, sqrdDists, threshold, nPlanes, indexCombinations, indexCombinationsDists)
+	[sd, orig_indices] = sort(sqrdDists);
+	
+	indexCombinations = {};
+	indexCombinationsDists = {};
+	
+	setLen = nPlanes
+	for i = 1:nPlanes
+		if (sqrdDists(i) < threshold)
+			setLen = setLen + 1;
+			indexCombinations.add({i});
+			indexCombinationsDists.add(sqrdDists(i));
+		else
+			break;
+		end
+	end
+
+	for k = (nPlanes-1):-1:1
+		for i = k:setLen
+			if (sqrdDists(i) < threshold)
+				dist = idxCombDists[j] + sqrdDists[i];
+				if (dist < threshold)
+					idxCombsDists.add(dist)
+					idxCombs.add(setplus(i + idxComb[j]));
+					setLen++;
+				else
+			end
+		end
+	end
+
+	Switch indices back to original
+end
+
+
+
+Probably does not neet to be sorted actually, this should do just as well:	
+
+
+findNeighbors(hashcode, sqrdDists, threshold, nPlanes, indexCombinations, indexCombinationsDists)
+	indexCombinations = {};
+	indexCombinationsDists = {};
+	
+	setLen = nPlanes
+	for i = 1:nPlanes
+		if (sqrdDists(i) < threshold)
+			setLen = setLen + 1;
+			indexCombinations.add({i});
+			indexCombinationsDists.add(sqrdDists(i));
+		else
+			break;
+		end
+	end
+
+	for k = (nPlanes-1):-1:1
+		for i = k:setLen
+			if (sqrdDists(i) < threshold)
+				dist = idxCombDists[j] + sqrdDists[i];
+				if (dist < threshold)
+					idxCombsDists.add(dist)
+					idxCombs.add(setplus(i + idxComb[j]));
+					setLen++;
+				else
+			end
+		end
+	end
+end
+
+
 
 
 
