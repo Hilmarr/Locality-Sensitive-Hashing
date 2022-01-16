@@ -1,0 +1,155 @@
+create sorted list of distances to the hyperplane
+
+Step 1.
+Remove distances higher than threshold, need to check on the other side of those hyperplanes
+
+Step 2.
+Start with list from step one
+Remove distances that can't be combined with smallest distance and still be less than threshold
+Check combinations:
+	try to match pnt 1 with all
+	try to match pnt 2 with all that matched with 1 (not the last couple if they did not match)
+	try to match pnt 3 with all that matched with 2
+	...
+
+Step 3.
+Start with list from step 2
+Remove points that can not be matched with both pnt1 and pnt2
+Check combinations:
+	try to match pnt1, pnt2 with all
+	try to match pnt1, pnt3 with all that matched with pnt1, pnt2
+	...
+
+
+
+
+Step 1.
+pnt1 < T?, pnt2 < T ?, ..., pntN < T
+
+Step 2.
+Check if points 2 to N are less than T - pnt1
+Check if points 3 to N are less than T - pnt2 
+Check if points 4 to N are less than T - pnt3
+...
+
+Step 3. 
+Do step2 for T = T - pnt1, and list from 2 to N
+Do step2 for T = T - pnt2, and list from 3 to N
+Do step2 for T = T - pnt3, and list from 4 to N
+
+Step 4. 
+Do step3 for T = T - pnt1, and list from 2 to N
+Do step3 for T = T - pnt2, and list from 3 to N
+Do step3 for T = T - pnt3, and list from 4 to N
+
+
+Can save distance and results from previous iterations perhaps.
+Can also shorten search since if number a can't match with larger number c, then neither can number between them c.
+
+Combine the two approaches listed here
+
+
+
+Or perhaps, alternatively
+
+Try to see if all points less than threshold together are less than threshold
+Then check recursively for each subset of one less
+Then check recursively for each subset of two less
+etc etc
+
+This is probably more time consuming
+
+
+
+function boxes = find_nearby_boxes(hashcode, sqrdDists, threshold, nPlanes)
+	[sd, orig_indices] = sort(sqrdDists);
+	
+	indexCombinations = {}
+	indexCombinationsDists = {}
+
+	smallLen = nPlanes
+	for i = 1:nPlanes
+		if (sqrdDists(i) < threshold)
+			smallLen = smallLen + 1;
+			indexCombinations.add({i});
+			indexCombinationsDists.add(sqrdDists(i));
+		else
+			break;
+		end
+	end
+	
+	prevStartOffset = 0;
+	for i = 1:smallLen
+		prevLength = smallLen;
+		matchedNumInner = 0;
+		matchedNumOuter = 0;
+		for j = 1:smallLen
+			for k = j:prevLength
+				dist = sqrdDists[j] + indexCombinationDists[prevStart+k]
+				if (dist < threshold)
+					matchedNumInner++;
+					indexCombinations[matchedNum] = j + indexCombinations[prevStart+k]; // accumulate set (or use binary codes)
+					indexCombinationsDists[matchedNum] = dist;
+				end
+			end
+			if no matches in entire loop break  % Optimization
+			else
+				matchNumOuter++;
+		end
+		
+		smallLen = matchedNum;	
+end
+
+
+
+
+findNeighborsAux(hashcode, sqrdDists, threshold, smallLen, indexCombinations, indexCombinationsDists)
+	idxCombs = {}
+	idxCombsDists = {}
+	neighborsFound = smallLen;
+
+	if (smallLen > 2)
+		neighborsFound += findNeighborsAux(hashcode, sqrdDists[i+1,:], threshold, smallLen-1, idxCombs, idxCombDists);
+	end
+
+	for i = 1:smallLen
+		for j = 1:neighborsFound
+			dist = idxCombDists[j] + sqrdDists[i];
+			if (idxCombDists[j] + sqrdDists[i] < threshold)
+				idxCombsDists.add(dist)
+				idxCombs.add(setplus(i + idxComb[j]));
+				neighborsFound++;
+			end
+		end
+	end
+	
+	indexCombinations = setplus(indexCombinations, idxCombs);
+	indexCombinationsDists = setplus(indexCombinations, idxCombsDists);
+end
+	
+	
+	
+
+findNeighbors(hashcode, sqrdDists, threshold, nPlanes, indexCombinations, indexCombinationsDists)
+	[sd, orig_indices] = sort(sqrdDists);
+	
+	smallLen = nPlanes
+	for i = 1:nPlanes
+		if (sqrdDists(i) < threshold)
+			smallLen = smallLen + 1;
+			indexCombinations.add({i});
+			indexCombinationsDists.add(sqrdDists(i));
+		else
+			break;
+		end
+	end
+
+	indexCombinations = {};
+	indexCombinationsDists = {};
+	neighborsFound = findNeigborsAux(hashcode, sqrdDists, threshold, smallLen, indexCombinations, indexCombinationsDists);
+end
+		
+
+
+
+	
