@@ -143,7 +143,7 @@ findNeighbors(hashcode, sqrdDists, threshold, nPlanes, indexCombinations, indexC
 	indexCombinations = {};
 	indexCombinationsDists = {};
 	
-	smallLen = nPlanes
+	smallLen = 0
 	for i = 1:smallLen
 		if (sqrdDists(i) < threshold)
 			smallLen = smallLen + 1;
@@ -169,7 +169,7 @@ findNeighbors(hashcode, sqrdDists, threshold, nPlanes, indexCombinations, indexC
 	indexCombinations = {};
 	indexCombinationsDists = {};
 	
-	setLen = nPlanes
+	setLen = 0
 	for i = 1:nPlanes
 		if (sqrdDists(i) < threshold)
 			setLen = setLen + 1;
@@ -201,11 +201,11 @@ end
 Probably does not neet to be sorted actually, this should do just as well:	
 
 
-findNeighbors(hashcode, sqrdDists, threshold, nPlanes, indexCombinations, indexCombinationsDists)
+findNeighbors(sqrdDists, threshold, nPlanes, indexCombinations, indexCombinationsDists)
 	indexCombinations = {};
 	indexCombinationsDists = {};
 	
-	setLen = nPlanes
+	setLen = 0
 	for i = 1:nPlanes
 		if (sqrdDists(i) < threshold)
 			setLen = setLen + 1;
@@ -231,6 +231,114 @@ findNeighbors(hashcode, sqrdDists, threshold, nPlanes, indexCombinations, indexC
 end
 
 
+Example runs:
+
+
+Threshold = 6
+Starting set = {1, 2, 3, 4, 8}
+
+element < 6 ?
+{1,2,3,4}
+
+3 + 4 < 6 ? NO
+
+2 + 3 < 6 ? YES
+2 + 3 < 6 ? NO
+{1, 2, 3, 4, (2,3)}
+
+1 + 2 < 6 ? YES
+1 + 3 < 6 ? YES
+1 + 4 < 6 ? YES
+1 + (2 + 3) < 6 ? NO
+{1, 2, 3, 4, (2,3), (1,2), (1,3), (1,4)}
+
+
+
+Threshold = 6
+Starting set = {3, 1, 4, 8, 2}
+
+element < 6 ?
+{3, 1, 4, 2}
+
+4 + 2 < 6 ? NO
+
+1 + 4 < 6 ? YES
+1 + 2 < 6 ? YES
+{3, 1, 4, 2, (1,4), (1,2)}
+
+3 + 1 < 6 ? YES
+3 + 4 < 6 ? NO
+3 + 2 < 6 ? YES
+3 + (1 + 4) < 6 ? NO
+3 + (1 + 2) < 6 ? NO
+{3, 1, 4, 2, (1,4), (1,2), (3,1), (3,2)}
+
+
+
+actually, we need masks that we can later use to xor with the hashcode
+
+findNeighborMasks(sqrdDists, threshold, nPlanes, indexCombinationMasks, indexCombinationDists)
+	indexCombinationMasks = {};
+	indexCombinationDists = {};
+	
+	setLen = 0
+	for i = 1:nPlanes
+		if (sqrdDists(i) < threshold)
+			setLen++;
+			indexCombinationMasks.add(1 << (i-1));
+			indexCombinationDists.add(sqrdDists(i));
+		else
+			break;
+		end
+	end
+
+	for k = (nPlanes-1):-1:1
+		for i = k:setLen
+			if (sqrdDists(i) < threshold)
+				dist = idxCombDists[j] + sqrdDists[i];
+				if (dist < threshold)
+					setLen++;
+					idxCombsDists.add(dist)
+					idxCombs.add(xor(1 << (i-1), idxComb[j]));
+				else
+			end
+		end
+	end
+
+	return setLen; // and also implicitly indexCombinationMasks and indexCombinationDists
+end
+
+
+[setLen, indexCombinationMasks, indexCombinationDists] = findNeighborMasks(sqrdDists, threshold, nPlanes)
+	indexCombinationMasks = {};
+	indexCombinationDists = {};
+	
+	setLen = 0
+	for i = 1:nPlanes
+		if (sqrdDists(i) < threshold)
+			setLen++;
+			indexCombinationMasks.add(1 << (i-1));
+			indexCombinationDists.add(sqrdDists(i));
+		else
+			break;
+		end
+	end
+
+	for k = (nPlanes-1):-1:1
+		for i = k:setLen
+			if (sqrdDists(i) < threshold)
+				dist = idxCombDists[j] + sqrdDists[i];
+				if (dist < threshold)
+					setLen++;
+					idxCombsDists.add(dist)
+					idxCombs.add(xor(1 << (i-1), idxComb[j]));
+				else
+			end
+		end
+	end
+
+	return [setLen, indexCombinationMasks, indexCombinationDists]
+end
 
 
 
