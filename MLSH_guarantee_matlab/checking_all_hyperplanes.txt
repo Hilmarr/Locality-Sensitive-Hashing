@@ -211,8 +211,6 @@ findNeighbors(sqrdDists, threshold, nPlanes, indexCombinations, indexCombination
 			setLen = setLen + 1;
 			indexCombinations.add({i});
 			indexCombinationsDists.add(sqrdDists(i));
-		else
-			break;
 		end
 	end
 
@@ -287,8 +285,6 @@ findNeighborMasks(sqrdDists, threshold, nPlanes, indexCombinationMasks, indexCom
 			setLen++;
 			indexCombinationMasks.add(1 << (i-1));
 			indexCombinationDists.add(sqrdDists(i));
-		else
-			break;
 		end
 	end
 
@@ -319,22 +315,23 @@ end
 			setLen++;
 			indexCombinationMasks.add(1 << (i-1));
 			indexCombinationDists.add(sqrdDists(i));
-		else
-			break;
 		end
 	end
 
-	for k = (nPlanes-1):-1:1
-		for i = k:setLen
-			if (sqrdDists(i) < threshold)
-				dist = idxCombDists[j] + sqrdDists[i];
+	setLenOld = setLen;
+	for k = (setLenOld-1):-1:1
+		tmp = setLen;
+		for i = (k+1):setLen
+			if (idxCombDists[k] < threshold)
+				dist = idxCombDists[k] + sqrdDists[i];
 				if (dist < threshold)
-					setLen++;
+					tmp++;
 					idxCombsDists.add(dist)
-					idxCombs.add(xor(1 << (i-1), idxComb[j]));
+					idxCombs.add(or(1 << (i-1), idxComb[j]));
 				else
 			end
 		end
+		setLen = tmp;
 	end
 
 	return [setLen, indexCombinationMasks, indexCombinationDists]
