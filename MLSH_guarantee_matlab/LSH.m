@@ -44,14 +44,22 @@ end
 %% set up the points
 
 nPlanes = 8;
-nPoints = 100;
+nPoints = 1000;
 vectorLength = 128;
-noiseScale = 0.1;
+noiseScale = 0.5;
 points1 = 2*rand(nPoints, vectorLength) - 1;
-% Noise generated from a uniform random distribution.
-noise = (2*rand(nPoints, vectorLength) - 1) * noiseScale;
-% Noise generated from a normal distribution
+
+% % Noise generated from a uniform random distribution.
+% noise = (2*rand(nPoints, vectorLength) - 1) * noiseScale;
+% % Noise generated from a normal distribution
 % noise = randn(nPoints, vectorLength) * noiseScale;
+% Noise of size = noiseScale
+noise = randn(nPoints, vectorLength);
+for i = 1:nPoints
+    noise(i,:) = noise(i,:) / sqrt(sum(noise(i,:) .* noise(i,:)));
+end
+noise = noiseScale * noise;
+
 points2 = points1 + noise;
 
 
@@ -121,7 +129,7 @@ tablesCreatedTime = toc(lshStart);
 %% Match points2 with points1 using LSH hash table
 matchingStart = tic;
 
-threshold = 0.1;
+threshold = 0.2;
 threshold = threshold*threshold; % Squared max distance
 % Squared dists from hyperplanes
 sqrdDists = zeros(nPoints, nPlanes);
