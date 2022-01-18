@@ -159,23 +159,37 @@ hashValuesTime2 = toc(hashValuesStart2);
 groupMapExt = zeros(nPoints*5,1);
 groupMapExtIndices = zeros(nPoints + 1);
 
+% cnt = 1;
+% for i = 1:nPoints
+%     hashcode = indexGroupMap(i) - 1;
+% %     fprintf("hashcode%d = %d\n", i, hashcode);
+%     groupMapExtIndices(i) = cnt;
+%     groupMapExt(cnt) = hashcode + 1;
+%     cnt = cnt + 1;
+%     % Replace this with a recursive function that can also find
+%     % combination of these values
+%     for j = 1:nPlanes
+%         if (sqrdDists(i,j) < threshold)
+%             groupMapExt(cnt) = bitxor(hashcode, bitshift(1, j-1)) + 1;
+% %             fprintf("  j=%d, hashcode=%d\n", j, groupMapExt(cnt));
+%             cnt = cnt + 1;
+%         end
+%     end
+% %     fprintf("\n");
+% end
+% groupMapExtIndices(nPoints + 1) = cnt;
+
 cnt = 1;
 for i = 1:nPoints
-    hashcode = indexGroupMap(i) - 1;
-%     fprintf("hashcode%d = %d\n", i, hashcode);
     groupMapExtIndices(i) = cnt;
-    groupMapExt(cnt) = hashcode + 1;
-    cnt = cnt + 1;
-    % Replace this with a recursive function that can also find
-    % combination of these values
-    for j = 1:nPlanes
-        if (sqrdDists(i,j) < threshold)
-            groupMapExt(cnt) = bitxor(hashcode, bitshift(1, j-1)) + 1;
-%             fprintf("  j=%d, hashcode=%d\n", j, groupMapExt(cnt));
-            cnt = cnt + 1;
-        end
+    
+    hashcode = indexGroupMap(i) - 1;
+    [hc_num, hc_neighbors] = ...
+        findCloseNeighbors(sqrdDists(i,:),threshold,nPlanes,hashcode);
+    for j = 1:hc_num
+        groupMapExt(cnt) = hc_neighbors(j) + 1;
+        cnt = cnt + 1;
     end
-%     fprintf("\n");
 end
 groupMapExtIndices(nPoints + 1) = cnt;
 
@@ -189,7 +203,7 @@ groupMapExtIndices(nPoints + 1) = cnt;
 %     end
 %     fprintf("\n");
 % end
-
+% 
 
 
 % Match the points using lsh
