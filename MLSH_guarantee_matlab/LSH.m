@@ -165,7 +165,7 @@ hashValuesTime2 = toc(hashValuesStart2);
 
 % Should later be naturally extended like an arraylist
 groupMapExt = zeros(nPoints*5,1);
-groupMapExtIndices = zeros(nPoints + 1);
+groupMapExtIndices = zeros(nPoints + 1, 1);
 
 % cnt = 1;
 % for i = 1:nPoints
