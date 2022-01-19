@@ -43,8 +43,8 @@ end
 
 %% set up the points
 
-nPlanes = 8;
-nPoints = 1000;
+nPlanes = 13;
+nPoints = 10000;
 vectorLength = 128;
 noiseScale = 1.0;
 % Set up threshold
@@ -287,7 +287,6 @@ fprintf("  time portion: hyperplane,vector multiplication:  %f%% \n", ...
 disp(" *");
 fprintf("  time portion spent creating and filling tables:  %f%% \n", ...
     100*tablesCreatedTime/lshTime);
-disp(" *");
 fprintf("  time portion spent matching 2nd dataset:         %f%% \n", ...
     100*matchingTime/lshTime);
 fprintf("\n\n");

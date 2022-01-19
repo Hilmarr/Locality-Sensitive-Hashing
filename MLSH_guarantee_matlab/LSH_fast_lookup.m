@@ -43,8 +43,8 @@ end
 
 %% set up the points
 
-nPlanes = 8;
-nPoints = 1000;
+nPlanes = 13;
+nPoints = 10000;
 vectorLength = 128;
 noiseScale = 1.0;
 % Set up threshold

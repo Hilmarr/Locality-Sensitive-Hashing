@@ -1,15 +1,26 @@
 
 %% set up the points
-clear all; close all; clc;
+% clear all; close all; clc;
 
-nPoints = 5000;
+% set seed
+rng(0)
+
+nPoints = 10000;
 vectorLength = 128;
-noiseScale = 0.5;
+noiseScale = 1.0;
 points1 = 2*rand(nPoints, vectorLength) - 1;
-% Noise generated from a uniform random distribution.
-noise = (2*rand(nPoints, vectorLength) - 1) * noiseScale;
-% Noise generated from a normal distribution
+
+% % Noise generated from a uniform random distribution.
+% noise = (2*rand(nPoints, vectorLength) - 1) * noiseScale;
+% % Noise generated from a normal distribution
 % noise = randn(nPoints, vectorLength) * noiseScale;
+% Noise of size = noiseScale
+noise = randn(nPoints, vectorLength);
+for i = 1:nPoints
+    noise(i,:) = noise(i,:) / sqrt(sum(noise(i,:) .* noise(i,:)));
+end
+noise = noiseScale * noise;
+
 points2 = points1 + noise;
 
 % Normalize the vectors so their absolute values are all 1 (l2 norms are 1)
