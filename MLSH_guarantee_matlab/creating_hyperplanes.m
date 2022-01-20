@@ -88,6 +88,19 @@ for i = 1:nNewPlanes
     inner_sum2(i) = inner_sum(index(i));
 end
 
+% % Are they orthogonal? Yes
+% cnt = 0;
+% for i = 1:57
+%     for j = (i+1):57
+% %         fprintf("new_hyperplanes(%d,:)*new_hyperplanes(%d,:)' = %f\n",...
+% %             i, j, new_hyperplanes(i,:)*new_hyperplanes(j,:)');
+%         if (abs(new_hyperplanes(i,:)*new_hyperplanes(j,:)') > 1e-10)
+%             cnt = cnt + 1;
+%         end
+%     end
+% end
+% fprintf("new_hyperplanes not orthogonal: %d\n", cnt);
+
 % % Correct sorting? Yes
 % fprintf("%f\n", max(abs(sum(new_hyperplanes(i,:)) - inner_sum2(i))));
 
@@ -99,6 +112,19 @@ for i = 1:57
         - ((inner_sum2(i) / inner_sum2(57+i))...
           * new_hyperplanes(57+i,:));
 end
+
+% % Are they orthogonal? Yes
+% cnt = 0;
+% for i = 1:57
+%     for j = (i+1):57
+% %         fprintf("new_hyperplanes(%d,:)*new_hyperplanes(%d,:)' = %f\n",...
+% %             i, j, new_hyperplanes(i,:)*new_hyperplanes(j,:)');
+%         if (abs(new_hyperplanes(i,:)*new_hyperplanes(j,:)') > 1e-10)
+%             cnt = cnt + 1;
+%         end
+%     end
+% end
+% fprintf("new_hyperplanes not orthogonal: %d\n", cnt);
 
 inner_sum3 = zeros(nNewPlanes,1);
 for i = 1:nNewPlanes
@@ -137,28 +163,55 @@ cost = positiveRatio + my_medians;
 
 [r, index] = sort(cost);
 
+new_hyperplanes3 = zeros(57, 128);
+
 for i = 1:57
-    new_hyperplanes2(i,:) = new_hyperplanes2(index(i),:);
+    new_hyperplanes3(i,:) = new_hyperplanes2(index(i),:);
 end
+
+% % Are they orthogonal? Yes
+% cnt = 0;
+% for i = 1:57
+%     for j = (i+1):57
+% %         fprintf("new_hyperplanes2(%d,:)*new_hyperplanes2(%d,:)' = %f\n",...
+% %             i, j, new_hyperplanes2(i,:)*new_hyperplanes2(j,:)');
+%         if (abs(new_hyperplanes3(i,:)*new_hyperplanes3(j,:)') > 1e-10)
+%             cnt = cnt + 1;
+%         end
+%     end
+% end
+% fprintf("new_hyperplanes3 not orthogonal: %d\n", cnt);
+
+
 
 %% Add them to the final hyperplanes
 
 final_hplanes = zeros(70,128);
 final_hplanes(1:13,:) = hyperplanes(1:13,:);
-final_hplanes(14:70,:) = new_hyperplanes2(:,:);
+final_hplanes(14:70,:) = new_hyperplanes3(:,:);
 
 % Are they orthogonal? Yes
+cnt = 0;
 for i = 1:70
     for j = (i+1):70
-        fprintf("final_hplanes(%d,:)*final_hplanes(%d,:)' = %f\n",...
-            i, j, final_hplanes(i,:)*final_hplanes(j,:)');
+%         fprintf("final_hplanes(%d,:)*final_hplanes(%d,:)' = %f\n",...
+%             i, j, final_hplanes(i,:)*final_hplanes(j,:)');
+        if (abs(final_hplanes(i,:)*final_hplanes(j,:)') > 1e-10)
+            cnt = cnt + 1;
+        end
     end
 end
+fprintf("Number of hyperplanes not orthogonal: %d\n", cnt);
 
 % What do the elements sum to?
+cnt = 0;
 for i = 1:70
-    fprintf("sum(final_hplanes(%d,:)) = %f\n", i, sum(final_hplanes(i,:)));
+%     fprintf("sum(final_hplanes(%d,:)) = %f\n", i, sum(final_hplanes(i,:)));
+    if (abs(sum(final_hplanes(i,:))) > 1e-10)
+        cnt = cnt + 1;
+    end
 end
+fprintf("number of sums not zero: %d\n", cnt);
 
 
 fileID = fopen('hyperplanes.dat','w');
