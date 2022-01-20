@@ -121,19 +121,19 @@ positiveRatio = positiveRatio - mean(positiveRatio);
 positiveRatio = positiveRatio / std(positiveRatio);
 positiveRatio = abs(positiveRatio);
 
-meanMedianDifference = zeros(57,1);
+my_medians = zeros(57,1);
 for i = 1:57
-    meanMedianDifference(i) = ...
-        abs(mean(new_hyperplanes2(i,:)) - median(new_hyperplanes2(i,:)));
+    my_medians(i) = ...
+        abs(median(new_hyperplanes2(i,:)));
 end
-meanMedianDifference = meanMedianDifference - mean(meanMedianDifference);
-meanMedianDifference = meanMedianDifference / std(meanMedianDifference);
-meanMedianDifference = abs(meanMedianDifference);
+my_medians = my_medians - mean(my_medians);
+my_medians = my_medians / std(my_medians);
+my_medians = abs(my_medians);
 
 % Create some cost function that I want to sort by, I only really need some
 % of them. Just want the distribution to be compact if possible, not really
 % too important.
-cost = positiveRatio + meanMedianDifference;
+cost = positiveRatio + my_medians;
 
 [r, index] = sort(cost);
 
