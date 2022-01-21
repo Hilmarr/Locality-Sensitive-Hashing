@@ -215,5 +215,5 @@ fprintf("number of sums not zero: %d\n", cnt);
 
 
 fileID = fopen('hyperplanes.dat','w');
-fwrite(fileID,final_hyperplanes,'float32');
+fwrite(fileID,final_hplanes','float32');
 fclose(fileID);
