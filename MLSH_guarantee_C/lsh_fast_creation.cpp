@@ -19,11 +19,10 @@ const int _THRESHOLD = 20;
 const int THRESHOLD = _THRESHOLD * _THRESHOLD; // Threshold to check on other side of hyperplane(s)
 
 
-int set_int_arr_size(int** arr, int curSize, int newSize) {
-    int* newArr = (int*)malloc(newSize * sizeof(int));
-    memcpy(newArr, *arr, curSize * sizeof(int));
+inline int set_int_arr_size(int** arr, int curSize, int newSize) {
     int* oldArr = *arr;
-    *arr = newArr;
+    *arr = (int*)malloc(newSize * sizeof(int));
+    memcpy(*arr, oldArr, curSize * sizeof(int));
     free(oldArr);
     return newSize;
 }
@@ -306,9 +305,9 @@ int main(int argc, char** argv) {
     calculate_hash_values_and_dists(nQueryVecs, queryVecs, nPlanes, hyperplanes,
                           indexGroupMap, sqrdDists);
 
-    int groupMapExtLen = nQueryVecs*5;
-    int* groupMapExt = (int*) malloc(groupMapExtLen * sizeof(int));
-    int* groupMapExtIndices = (int*)malloc((nQueryVecs+1) * sizeof(int));
+    int idxGroupMapExtLen = 5;
+    int* idxGroupMapExt = (int*) malloc(idxGroupMapExtLen * sizeof(int));
+    int* idxGroupMapExtIndices = (int*)malloc((nQueryVecs+1) * sizeof(int));
 
     // Masks and distances for all combinations of hyperplanes where the euclidean
     // distance from the point to the intersection of the hyperplane is below
@@ -321,28 +320,29 @@ int main(int argc, char** argv) {
     int cnt = 0;
     for (int i = 0; i < nQueryVecs; i++) {
         // Set the index to the groups that the query point is mapped to
-        groupMapExtIndices[i] = cnt;
+        idxGroupMapExtIndices[i] = cnt;
         // Get the hashcode for this query point
         int hashcode = indexGroupMap[i];
         // Add hashcode to the list
-        groupMapExt[cnt] = hashcode;
+        idxGroupMapExt[cnt] = hashcode;
         cnt++;
         // Find all combinations of hyperplanes that is closer than sqrt(THRESHOLD)
         int setLen = findNeighborMasks(sqrdDists, nPlanes, THRESHOLD,
                                        combMasks, combDists);
         // Check if we have reserved enough memory
-        if (cnt + setLen > groupMapExtLen) {
-            groupMapExtLen = set_int_arr_size(&groupMapExt, groupMapExtLen, (cnt+setLen) * 2);
-            printf("Not enough with %d elements for groupMapExt. ", groupMapExtLen);
-            printf("Expanding to %d elements\n", 2*(cnt+setLen));
+        if (cnt + setLen >= idxGroupMapExtLen) {
+            printf("Not enough with %d elements for idxGroupMapExt. ", idxGroupMapExtLen);
+            printf("Expanding to %d elements\n", 2*(cnt+setLen) + 1);
+            idxGroupMapExtLen = set_int_arr_size(
+                &idxGroupMapExt, idxGroupMapExtLen, (cnt+setLen) * 2 + 1);
         }
         // Add neighboring boxes to the extended groupMap
         for (int j = 0; j < setLen; j++) {
-            groupMapExt[cnt] = hashcode ^ combMasks[j];
+            idxGroupMapExt[cnt] = hashcode ^ combMasks[j];
             cnt++;
         }
     }
-    groupMapExtIndices[nQueryVecs] = cnt;
+    idxGroupMapExtIndices[nQueryVecs] = cnt;
 
     free(combMasks);
     free(combDists);
@@ -405,8 +405,8 @@ int main(int argc, char** argv) {
     free(sqrdDists);
     free(groupIndexMap);
     free(groupArray);
-    free(groupMapExt);
-    free(groupMapExtIndices);
+    free(idxGroupMapExt);
+    free(idxGroupMapExtIndices);
 
     free(lshMatches);
     free(bestMatchDists);

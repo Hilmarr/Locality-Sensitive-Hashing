@@ -4,7 +4,7 @@ FILES = read_hyperplanes lsh_single_table lsh_fast_creation
 
 .PHONY: default all clean
 
-default: lsh_single_table
+default: lsh_fast_creation
 
 all: $(FILES)
 
