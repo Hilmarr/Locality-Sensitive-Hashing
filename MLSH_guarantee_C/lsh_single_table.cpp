@@ -232,6 +232,7 @@ int main(int argc, char** argv)
                  groupIndexMap, groupArray,
                  lshMatches, bestMatchDists, lshMatches2, bestMatchDists2);
 
+    free(indexGroupMap);
 
     // --- Check matches ---
 
