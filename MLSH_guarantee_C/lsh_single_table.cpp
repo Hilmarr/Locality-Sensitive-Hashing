@@ -89,6 +89,50 @@ void organize_points_into_groups(
     free(groupIndexMapTails);
 }
 
+void match_points(int nQueryVecs,
+                  float* __restrict__ queryVecs,
+                  float* __restrict__ baseVecs, int* __restrict__ indexGroupMap,
+                  int* __restrict__ groupIndexMap, int* __restrict__ groupArray,
+                  // outputs
+                  int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
+                  int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2) {
+    for (int i = 0; i < nQueryVecs; i++) {
+        // Find the group of elements from groupArray to match with
+        float bestMatchDist = 1e10;
+        float bestMatchDist2 = 1e10;
+        int match = -1;
+        int match2 = -1;
+        int hashcode = indexGroupMap[i];
+        int jStart = groupIndexMap[hashcode];
+        int jEnd = groupIndexMap[hashcode + 1];
+
+        // Match the points
+        for (int j = jStart; j < jEnd; j++) {
+            int idx = groupArray[j];
+            // diff = sum((queryVecs[i][:] - baseVecs[idx][:]) .^ 2);
+            float diff = 0;
+            for (int k = 0; k < vectorLength; k++) {
+                float tmp = queryVecs[i * vectorLength + k] - baseVecs[idx * vectorLength + k];
+                diff += tmp * tmp;
+            }
+            // check if distance is the lowest distance so far
+            if (diff < bestMatchDist) {
+                // save old value as second best
+                bestMatchDist2 = bestMatchDist;
+                match2 = match;
+                // update best value
+                bestMatchDist = diff;
+                match = idx;
+            }
+        }
+
+        lshMatches[i] = match;
+        bestMatchDists[i] = bestMatchDist;
+        lshMatches2[i] = match2;
+        bestMatchDists2[i] = bestMatchDist2;
+    }
+}
+
 int main(int argc, char** argv)
 {
     int nBaseVecs = 0;    // number of base vectors
@@ -134,11 +178,11 @@ int main(int argc, char** argv)
     float* baseVecs = (float*)tmp1;
     float* queryVecs = (float*)tmp2;
 
-    // TODO: make LSH tables
+    // ---  Make LSH tables ---
 
-    //  -- Arrays to organize groups --
+    //  - Arrays to organize groups -
     const int nGroups = 1 << nPlanes;
-    // the group that each point falls into
+    // the group that each base point falls into
     int* indexGroupMap = (int*)malloc(nBaseVecs * sizeof(int));
     // // distance from each hyperplane for each point
     // float* distanceFromHP = (float*) malloc(nBaseVecs * nPlanes * sizeof(float));
@@ -152,7 +196,44 @@ int main(int argc, char** argv)
     organize_points_into_groups(nBaseVecs, nGroups, indexGroupMap,
                                 groupArray, groupIndexMap);
 
-    // TODO: match
+    free(indexGroupMap);
+
+    // --- Match points ---
+
+    // - Array allocation and initialization -
+    // holds the actual matches
+    int* lshMatches = (int*)malloc(nQueryVecs * sizeof(int));
+    memset(lshMatches, -1, nQueryVecs * sizeof(int));
+    // holds the best match distance for each query vector
+    float* bestMatchDists = (float*)malloc(nQueryVecs * sizeof(float));
+    for (int i = 0; i < nQueryVecs; i++) {
+        bestMatchDists[i] = 1e10;
+    }
+
+    // Holds the second best matches
+    int* lshMatches2 = (int*)malloc(nQueryVecs * sizeof(int));
+    memset(lshMatches2, -1, nQueryVecs * sizeof(int));
+    // holds the second best match distance for each query vector
+    float* bestMatchDists2 = (float*)malloc(nQueryVecs * sizeof(float));
+    for (int i = 0; i < nQueryVecs; i++) {
+        bestMatchDists[i] = 1e10;
+    }
+
+    // the group that each query point falls into
+    indexGroupMap = (int*)malloc(nQueryVecs * sizeof(int));
+
+    // - Calculate hash points for query vectors -
+
+    calculate_hash_values(nQueryVecs, queryVecs, nPlanes, hyperplanes,
+                          indexGroupMap);
+
+    // - Compare points -
+    match_points(nQueryVecs, queryVecs, baseVecs, indexGroupMap,
+                 groupIndexMap, groupArray,
+                 lshMatches, bestMatchDists, lshMatches2, bestMatchDists2);
+
+
+    // --- Check matches ---
 
     // - Read ground truth -
     int* tmpGT;
@@ -163,15 +244,51 @@ int main(int argc, char** argv)
     }
     free(tmpGT);
 
-    // TODO: check if matches are correct
+    // - Check how many matches were correct -
+    int correct = 0;
+    for (int i = 0; i < nQueryVecs; i++) {
+        correct += lshMatches[i] == groundTruth[i];
+    }
+    double correctRatio = ((double)correct) / nQueryVecs;
+    printf("Correct ratio: %f\n", correctRatio);
 
+    long unsigned int diff_both = 0;
+    long unsigned int diff_correct = 0;
+    long unsigned int diff_incorrect = 0;
+    for (int i = 0; i < nQueryVecs; i++) {
+        double diff = 0;
+        float* p_query = &queryVecs[i * 128];
+        float* p_base = &baseVecs[groundTruth[i] * 128];
+        for (int j = 0; j < 128; j++) {
+            diff += (p_query[i] - p_base[i]) * (p_query[i] - p_base[i]);
+        }
+        diff = sqrt(diff);
+        diff_both += diff;
+        if (lshMatches[i] == groundTruth[i]) {
+            diff_correct += (int)diff;
+        } else {
+            diff_incorrect += (int)diff;
+        }
+    }
+    int incorrect = nQueryVecs - correct;
 
-    // free memory
+    printf("Average distance of best fits: %f\n",
+           ((double)diff_both) / nQueryVecs);
+    printf("Average distance correctly classified points: %f\n",
+           ((double)diff_correct) / correct);
+    printf("Average distance incorrectly classified points: %f\n",
+           ((double)diff_incorrect) / incorrect);
+
+    // --- Free memory ---
     
-    free(indexGroupMap);
     // free(distanceFromHP);
     free(groupIndexMap);
     free(groupArray);
+
+    free(lshMatches);
+    free(bestMatchDists);
+    free(lshMatches2);
+    free(bestMatchDists2);
 
     free(hyperplanes);
     free(baseVecs);
