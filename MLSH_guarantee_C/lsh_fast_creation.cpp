@@ -209,9 +209,9 @@ int findNeighborMasks(float* sqrdDists, int nPlanes, float threshold,
             if (combDists[k] < threshold) {
                 int dist = combDists[k] + combDists[i];
                 if (dist < threshold) {
-                    tmp++;
                     combMasks[tmp] = combMasks[k] | combMasks[i];
                     combDists[tmp] = dist;
+                    tmp++;
                 }
             }
         }
@@ -221,6 +221,56 @@ int findNeighborMasks(float* sqrdDists, int nPlanes, float threshold,
     return setLen;
 }
 
+int find_nearby_boxes(int nPlanes, int nGroups, int nPoints, int* indexGroupMap, float* sqrdDists,
+                      int** pIdxGroupMapExt, int** pIdxGroupMapExtIndices) {
+    int idxGroupMapExtLen = 100 * nPoints;
+    int* idxGroupMapExt = (int*)malloc(idxGroupMapExtLen * sizeof(int));
+    int* idxGroupMapExtIndices = (int*)malloc((nPoints + 1) * sizeof(int));
+
+    // Masks and distances for all combinations of hyperplanes where the euclidean
+    // distance from the point to the intersection of the hyperplane is below
+    // a set threshold.
+    // nGroups is the theoretical upper limit of possible combinations, but
+    // in reality the number of potential matches will likely never be that high
+    int* combMasks = (int*)malloc(nGroups * sizeof(int));
+    float* combDists = (float*)malloc(nGroups * sizeof(float));
+
+    int cnt = 0;
+    for (int i = 0; i < nPoints; i++) {
+        // Set the index to the groups that the query point is mapped to
+        idxGroupMapExtIndices[i] = cnt;
+        // Get the hashcode for this query point
+        int hashcode = indexGroupMap[i];
+        // Add hashcode to the list
+        idxGroupMapExt[cnt] = hashcode;
+        cnt++;
+        // Find all combinations of hyperplanes that is closer than sqrt(THRESHOLD)
+        int setLen = findNeighborMasks(&sqrdDists[i * nPlanes], nPlanes, THRESHOLD,
+                                       combMasks, combDists);
+        // printf("i=%d,  setLen=%d\n", i, setLen);
+        // Check if we have reserved enough memory
+        if (cnt + setLen >= idxGroupMapExtLen) {
+            printf("Not enough with %d elements for idxGroupMapExt. ", idxGroupMapExtLen);
+            printf("Expanding to %d elements\n", 2 * (cnt + setLen) + 1);
+            idxGroupMapExtLen = set_int_arr_size(
+                &idxGroupMapExt, idxGroupMapExtLen, (cnt + setLen) * 2 + 1);
+        }
+        // Add neighboring boxes to the extended groupMap
+        for (int j = 0; j < setLen; j++) {
+            idxGroupMapExt[cnt] = hashcode ^ combMasks[j];
+            cnt++;
+        }
+    }
+    idxGroupMapExtIndices[nPoints] = cnt;
+
+    free(combMasks);
+    free(combDists);
+
+    *pIdxGroupMapExt = idxGroupMapExt;
+    *pIdxGroupMapExtIndices = idxGroupMapExtIndices;
+
+    return idxGroupMapExtLen;
+}
 
 int main(int argc, char** argv) {
     int nBaseVecs = 0;   // number of base vectors
@@ -316,59 +366,20 @@ int main(int argc, char** argv) {
     calculate_hash_values_and_dists(nQueryVecs, queryVecs, nPlanes, hyperplanes,
                           indexGroupMap, sqrdDists);
 
-    int idxGroupMapExtLen = 100*nQueryVecs;
-    int* idxGroupMapExt = (int*) malloc(idxGroupMapExtLen * sizeof(int));
-    int* idxGroupMapExtIndices = (int*)malloc((nQueryVecs+1) * sizeof(int));
+    int* idxGroupMapExt;
+    int* idxGroupMapExtIndices;
 
-    // Masks and distances for all combinations of hyperplanes where the euclidean
-    // distance from the point to the intersection of the hyperplane is below
-    // a set threshold.
-    // nGroups is the theoretical upper limit of possible combinations, but
-    // in reality the number of potential matches will likely never be that high
-    int* combMasks = (int*) malloc(nGroups * sizeof(int));
-    float* combDists = (float*) malloc(nGroups * sizeof(float));
+    find_nearby_boxes(nPlanes, nGroups, nQueryVecs,
+                      indexGroupMap, sqrdDists,
+                      &idxGroupMapExt, &idxGroupMapExtIndices);
 
-    int cnt = 0;
-    for (int i = 0; i < nQueryVecs; i++) {
-        // Set the index to the groups that the query point is mapped to
-        idxGroupMapExtIndices[i] = cnt;
-        // Get the hashcode for this query point
-        int hashcode = indexGroupMap[i];
-        // Add hashcode to the list
-        idxGroupMapExt[cnt] = hashcode;
-        cnt++;
-        // Find all combinations of hyperplanes that is closer than sqrt(THRESHOLD)
-        int setLen = findNeighborMasks(&sqrdDists[i*nPlanes], nPlanes, THRESHOLD,
-                                       combMasks, combDists);
-        // printf("i=%d,  setLen=%d\n", i, setLen);
-        // Check if we have reserved enough memory
-        if (cnt + setLen >= idxGroupMapExtLen) {
-            printf("Not enough with %d elements for idxGroupMapExt. ", idxGroupMapExtLen);
-            printf("Expanding to %d elements\n", 2*(cnt+setLen) + 1);
-            idxGroupMapExtLen = set_int_arr_size(
-                &idxGroupMapExt, idxGroupMapExtLen, (cnt+setLen) * 2 + 1);
-        }
-        // Add neighboring boxes to the extended groupMap
-        for (int j = 0; j < setLen; j++) {
-            idxGroupMapExt[cnt] = hashcode ^ combMasks[j];
-            cnt++;
-        }
-    }
-    idxGroupMapExtIndices[nQueryVecs] = cnt;
-    // printf("cnt = %d\n", cnt);
-    // for (int i = 0; i < nQueryVecs; i++) {
-    //     printf("idxGroupMapExtIndices[%d] = %d\n", i, idxGroupMapExtIndices[i]);
-    // }
-
-    free(combMasks);
-    free(combDists);
+    free(indexGroupMap);
 
     // - Compare points -
     match_points(nQueryVecs, queryVecs, baseVecs,
                  idxGroupMapExtIndices, idxGroupMapExt, groupIndexMap, groupArray,
                  lshMatches, bestMatchDists, lshMatches2, bestMatchDists2);
 
-    free(indexGroupMap);
 
     // --- Check matches ---
 
