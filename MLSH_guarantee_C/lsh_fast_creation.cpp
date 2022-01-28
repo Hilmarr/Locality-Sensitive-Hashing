@@ -197,7 +197,7 @@ int findNeighborMasks(float* sqrdDists, int nPlanes, float threshold,
         int tmp = setLen;
         for (int i = k + 1; i < setLen; i++) {
             if (combDists[k] < threshold) {
-                int dist = combDists[k] + combDists[i] + THRESHOLD / 10;
+                int dist = combDists[k] + combDists[i];
                 if (dist < threshold) {
                     combMasks[tmp] = combMasks[k] | combMasks[i];
                     combDists[tmp] = dist;
@@ -229,7 +229,6 @@ int find_potential_matches(
     int* combMasks = (int*)malloc((1+nGroups) * sizeof(int));
     combMasks[0] = 0;
     float* combDists = (float*)malloc(nGroups * sizeof(float));
-
     int cnt = 0;
     for (int i = 0; i < nPoints; i++) {
         // Set the index to the groups that the query point is mapped to
@@ -244,16 +243,18 @@ int find_potential_matches(
         for (int j = 0; j < setLen+1; j++) {
             // get next hashcode
             int hc = hashcode ^ combMasks[j];
-            // Check if we have reserved enough memory
-            if (cnt >= potentialMatchesLen) {
-                printf("Not enough with %d elements for potentialMatches. ", potentialMatchesLen);
-                printf("Expanding to %d elements\n", 2 * cnt);
-                potentialMatchesLen = set_int_arr_size(
-                    &potentialMatches, potentialMatchesLen, (cnt + setLen) * 2 + 1);
-            }
-            // Add point indices in group hc to potentialMatches
+            // Find start and end index of the group
             int kStart = groupIndexMap[hc];
             int kEnd = groupIndexMap[hc+1];
+            int groupSize = kEnd - kStart;
+            // Check if we have reserved enough memory
+            if (cnt + groupSize >= potentialMatchesLen) {
+                fprintf(stderr, "Not enough with %d elements for potentialMatches. ", potentialMatchesLen);
+                fprintf(stderr, "Expanding to %d elements\n", 2 * (cnt + groupSize));
+                potentialMatchesLen = set_int_arr_size(
+                    &potentialMatches, potentialMatchesLen, 2 * (cnt + groupSize));
+            }
+            // Add point indices in group hc to potentialMatches
             for (int k = kStart; k < kEnd; k++) {
                 potentialMatches[cnt] = groupArray[k];
                 cnt++;
@@ -275,9 +276,9 @@ int main(int argc, char** argv) {
     int nBaseVecs = 0;   // number of base vectors
     int nQueryVecs = 0;  // number of query vectors
 
-    const int nPlanes = 8;
+    const int nPlanes = 20;
 
-    // -----    Read data    -----
+    ;  // -----    Read data    -----
 
     // Check number of arguments
     if (argc < 5) {
@@ -402,6 +403,27 @@ int main(int argc, char** argv) {
 
     calculate_hash_values_and_dists(nQueryVecs, queryVecs, nPlanes, hyperplanes,
                                     indexGroupMap, sqrdDists);
+
+    // double accArr[nPlanes];
+    // double acc = 0;
+    // // printf("Distances from hyperplanes\n\n");
+    // for (int i = 0; i < nQueryVecs; i++) {
+    //     // printf("Point %d\n", i);
+    //     for (int j = 0; j < nPlanes; j++) {
+    //         double dist = sqrt(sqrdDists[i * nPlanes + j]);
+    //         // printf("  %f\n", dist);
+    //         acc += dist;
+    //         accArr[j] += dist;
+    //     }
+    //     // printf("\n");
+    // }
+    // printf("Mean distance from hyperplane = %f\n\n", acc / (nQueryVecs*nPlanes));
+    // for (int i = 0; i < nPlanes; i++) {
+    //     printf("  Mean distance from hyperplane %d = %f\n", i, (accArr[i] / nQueryVecs));
+    // }
+    // printf("\n");
+
+    // return 0;
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);

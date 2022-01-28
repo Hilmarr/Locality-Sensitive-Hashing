@@ -223,7 +223,7 @@ int findNeighborMasks(float* sqrdDists, int nPlanes, float threshold,
 
 int find_nearby_boxes(int nPlanes, int nGroups, int nPoints, int* indexGroupMap, float* sqrdDists,
                       int** pIdxGroupMapExt, int** pIdxGroupMapExtIndices) {
-    int idxGroupMapExtLen = 100 * nPoints;
+    int idxGroupMapExtLen = 1000 * nPoints;
     int* idxGroupMapExt = (int*)malloc(idxGroupMapExtLen * sizeof(int));
     int* idxGroupMapExtIndices = (int*)malloc((nPoints + 1) * sizeof(int));
 
@@ -275,8 +275,7 @@ int find_nearby_boxes(int nPlanes, int nGroups, int nPoints, int* indexGroupMap,
 int main(int argc, char** argv) {
     int nBaseVecs = 0;   // number of base vectors
     int nQueryVecs = 0;  // number of query vectors
-
-    const int nPlanes = 8;
+    const int nPlanes = 25;
 
     // -----    Read data    -----
 
