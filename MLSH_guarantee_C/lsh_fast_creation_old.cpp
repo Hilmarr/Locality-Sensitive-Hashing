@@ -16,7 +16,8 @@
 // later on if expedient
 const int vectorLength = 128;
 const int _THRESHOLD = 50;
-const int THRESHOLD = _THRESHOLD * _THRESHOLD;  // Threshold to check on other side of hyperplane(s)
+const int THRESHOLD = _THRESHOLD * _THRESHOLD; // Threshold to check on other side of hyperplane(s)
+
 
 inline int set_int_arr_size(int** arr, int curSize, int newSize) {
     int* oldArr = *arr;
@@ -31,7 +32,8 @@ void calculate_hash_values(
     int nPoints, float* __restrict__ points,
     int nPlanes, float* __restrict__ hyperplanes,
     // output
-    int* __restrict__ indexGroupMap) {
+    int* __restrict__ indexGroupMap)
+{
     // - Calculate hash values, keep track of sizes of each group -
     for (int i = 0; i < nPoints; i++) {
         float* point = &points[i * vectorLength];
@@ -60,7 +62,8 @@ void calculate_hash_values_and_dists(
     int nPlanes, float* __restrict__ hyperplanes,
     // output
     int* __restrict__ indexGroupMap,
-    float* __restrict__ sqrdDists) {
+    float* __restrict__ sqrdDists)
+{
     // - Calculate hash values, keep track of sizes of each group -
     for (int i = 0; i < nPoints; i++) {
         float* point = &points[i * vectorLength];
@@ -131,8 +134,9 @@ void organize_points_into_groups(
 void match_points(int nQueryVecs,
                   float* __restrict__ queryVecs,
                   float* __restrict__ baseVecs,
-                  int* __restrict__ potentialMatches,
-                  int* __restrict__ potentialMatchesIndices,
+                  int* __restrict__ idxGroupMapExtIndices,
+                  int* __restrict__ idxGroupMapExt,
+                  int* __restrict__ groupIndexMap, int* __restrict__ groupArray,
                   // outputs
                   int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
                   int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2) {
@@ -142,28 +146,33 @@ void match_points(int nQueryVecs,
         float bestMatchDist2 = 1e10;
         int match = -1;
         int match2 = -1;
-        int jStart = potentialMatchesIndices[i];
-        int jEnd = potentialMatchesIndices[i + 1];
+        int uStart = idxGroupMapExtIndices[i];
+        int uEnd = idxGroupMapExtIndices[i+1];
 
-        // Match the points
-        for (int j = jStart; j < jEnd; j++) {
+        for (int u = uStart; u < uEnd; u++) {
             // printf("u=%d\n", u);
-            int idx = potentialMatches[j];
-            
-            // diff = sum((queryVecs[i][:] - baseVecs[idx][:]) .^ 2);
-            float diff = 0;
-            for (int k = 0; k < vectorLength; k++) {
-                float tmp = queryVecs[i * vectorLength + k] - baseVecs[idx * vectorLength + k];
-                diff += tmp * tmp;
-            }
-            // check if distance is the lowest distance so far
-            if (diff < bestMatchDist) {
-                // save old value as second best
-                bestMatchDist2 = bestMatchDist;
-                match2 = match;
-                // update best value
-                bestMatchDist = diff;
-                match = idx;
+            int hashcode = idxGroupMapExt[u];
+            // printf("hashcode=%d\n", hashcode);
+            int jStart = groupIndexMap[hashcode];
+            int jEnd = groupIndexMap[hashcode + 1];
+            // Match the points
+            for (int j = jStart; j < jEnd; j++) {
+                int idx = groupArray[j];
+                // diff = sum((queryVecs[i][:] - baseVecs[idx][:]) .^ 2);
+                float diff = 0;
+                for (int k = 0; k < vectorLength; k++) {
+                    float tmp = queryVecs[i * vectorLength + k] - baseVecs[idx * vectorLength + k];
+                    diff += tmp * tmp;
+                }
+                // check if distance is the lowest distance so far
+                if (diff < bestMatchDist) {
+                    // save old value as second best
+                    bestMatchDist2 = bestMatchDist;
+                    match2 = match;
+                    // update best value
+                    bestMatchDist = diff;
+                    match = idx;
+                }
             }
         }
 
@@ -178,7 +187,8 @@ void match_points(int nQueryVecs,
 // for the function to be completely secure.
 // nGroups is the maximum amount of boxes that a point can be mapped to.
 int findNeighborMasks(float* sqrdDists, int nPlanes, float threshold,
-                      int* combMasks, float* combDists) {
+                      int* combMasks, float* combDists)
+{
     // Add single values below the threshold to lists
     int setLen = 0;
     for (int i = 0; i < nPlanes; i++) {
@@ -186,18 +196,18 @@ int findNeighborMasks(float* sqrdDists, int nPlanes, float threshold,
             combMasks[setLen] = 1 << i;
             combDists[setLen] = sqrdDists[i];
             setLen++;
-        }
+        }        
     }
-
+    
     // For every value starting with the initial setLen, try to combine the value
     // with all other values that comes after it in the list
     // can be combined if combDists[k] + combDists[i] < threshold
     int underThreshLen = setLen;
-    for (int k = underThreshLen - 2; k >= 0; k--) {
+    for (int k = underThreshLen-2; k >= 0; k--) {
         int tmp = setLen;
-        for (int i = k + 1; i < setLen; i++) {
+        for (int i = k+1; i < setLen; i++) {
             if (combDists[k] < threshold) {
-                int dist = combDists[k] + combDists[i] + THRESHOLD / 10;
+                int dist = combDists[k] + combDists[i];
                 if (dist < threshold) {
                     combMasks[tmp] = combMasks[k] | combMasks[i];
                     combDists[tmp] = dist;
@@ -211,62 +221,53 @@ int findNeighborMasks(float* sqrdDists, int nPlanes, float threshold,
     return setLen;
 }
 
-int find_potential_matches(
-    int nPlanes, int nGroups, int nPoints,
-    int* indexGroupMap, float* sqrdDists,
-    int* groupIndexMap, int* groupArray,
-    int** pPotentialMatches, int** pPotentialMatchesIndices)
-{
-    int potentialMatchesLen = 1000 * nPoints;
-    int* potentialMatches = (int*)malloc(potentialMatchesLen * sizeof(int));
-    int* potentialMatchesIndices = (int*)malloc((nPoints + 1) * sizeof(int));
+int find_nearby_boxes(int nPlanes, int nGroups, int nPoints, int* indexGroupMap, float* sqrdDists,
+                      int** pIdxGroupMapExt, int** pIdxGroupMapExtIndices) {
+    int idxGroupMapExtLen = 100 * nPoints;
+    int* idxGroupMapExt = (int*)malloc(idxGroupMapExtLen * sizeof(int));
+    int* idxGroupMapExtIndices = (int*)malloc((nPoints + 1) * sizeof(int));
 
     // Masks and distances for all combinations of hyperplanes where the euclidean
     // distance from the point to the intersection of the hyperplane is below
     // a set threshold.
     // nGroups is the theoretical upper limit of possible combinations, but
     // in reality the number of potential matches will likely never be that high
-    int* combMasks = (int*)malloc((1+nGroups) * sizeof(int));
-    combMasks[0] = 0;
+    int* combMasks = (int*)malloc(nGroups * sizeof(int));
     float* combDists = (float*)malloc(nGroups * sizeof(float));
 
     int cnt = 0;
     for (int i = 0; i < nPoints; i++) {
         // Set the index to the groups that the query point is mapped to
-        potentialMatchesIndices[i] = cnt;
+        idxGroupMapExtIndices[i] = cnt;
         // Get the hashcode for this query point
         int hashcode = indexGroupMap[i];
+        // Add hashcode to the list
+        idxGroupMapExt[cnt] = hashcode;
+        cnt++;
         // Find all combinations of hyperplanes that is closer than sqrt(THRESHOLD)
         int setLen = findNeighborMasks(&sqrdDists[i * nPlanes], nPlanes, THRESHOLD,
-                                       combMasks+1, combDists);
-        // Find potential matches by checking hashcode and all hashcodes within
-        // a certain distance
-        for (int j = 0; j < setLen+1; j++) {
-            // get next hashcode
-            int hc = hashcode ^ combMasks[j];
-            // Check if we have reserved enough memory
-            if (cnt >= potentialMatchesLen) {
-                printf("Not enough with %d elements for potentialMatches. ", potentialMatchesLen);
-                printf("Expanding to %d elements\n", 2 * cnt);
-                potentialMatchesLen = set_int_arr_size(
-                    &potentialMatches, potentialMatchesLen, (cnt + setLen) * 2 + 1);
-            }
-            // Add point indices in group hc to potentialMatches
-            int kStart = groupIndexMap[hc];
-            int kEnd = groupIndexMap[hc+1];
-            for (int k = kStart; k < kEnd; k++) {
-                potentialMatches[cnt] = groupArray[k];
-                cnt++;
-            }
+                                       combMasks, combDists);
+        // printf("i=%d,  setLen=%d\n", i, setLen);
+        // Check if we have reserved enough memory
+        if (cnt + setLen >= idxGroupMapExtLen) {
+            printf("Not enough with %d elements for idxGroupMapExt. ", idxGroupMapExtLen);
+            printf("Expanding to %d elements\n", 2 * (cnt + setLen) + 1);
+            idxGroupMapExtLen = set_int_arr_size(
+                &idxGroupMapExt, idxGroupMapExtLen, (cnt + setLen) * 2 + 1);
+        }
+        // Add neighboring boxes to the extended groupMap
+        for (int j = 0; j < setLen; j++) {
+            idxGroupMapExt[cnt] = hashcode ^ combMasks[j];
+            cnt++;
         }
     }
-    potentialMatchesIndices[nPoints] = cnt;
+    idxGroupMapExtIndices[nPoints] = cnt;
 
     free(combMasks);
     free(combDists);
 
-    *pPotentialMatches = potentialMatches;
-    *pPotentialMatchesIndices = potentialMatchesIndices;
+    *pIdxGroupMapExt = idxGroupMapExt;
+    *pIdxGroupMapExtIndices = idxGroupMapExtIndices;
 
     return cnt;
 }
@@ -401,7 +402,7 @@ int main(int argc, char** argv) {
 #endif
 
     calculate_hash_values_and_dists(nQueryVecs, queryVecs, nPlanes, hyperplanes,
-                                    indexGroupMap, sqrdDists);
+                          indexGroupMap, sqrdDists);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -413,23 +414,22 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    int* potentialMatches;
-    int* potentialMatchesIndices;
+    int* idxGroupMapExt;
+    int* idxGroupMapExtIndices;
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    find_potential_matches(nPlanes, nGroups, nQueryVecs,
-                           indexGroupMap, sqrdDists,
-                           groupIndexMap, groupArray,
-                           &potentialMatches, &potentialMatchesIndices);
+    find_nearby_boxes(nPlanes, nGroups, nQueryVecs,
+                      indexGroupMap, sqrdDists,
+                      &idxGroupMapExt, &idxGroupMapExtIndices);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-    printf("find_potential_matches for query vectors:\n");
+    printf("find_nearby_boxes for query vectors:\n");
     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 
     gettimeofday(&time, NULL);
@@ -445,7 +445,7 @@ int main(int argc, char** argv) {
 
     // - Compare points -
     match_points(nQueryVecs, queryVecs, baseVecs,
-                 potentialMatches, potentialMatchesIndices,
+                 idxGroupMapExtIndices, idxGroupMapExt, groupIndexMap, groupArray,
                  lshMatches, bestMatchDists, lshMatches2, bestMatchDists2);
 
 #ifdef TIME_LSH
@@ -509,8 +509,8 @@ int main(int argc, char** argv) {
     free(sqrdDists);
     free(groupIndexMap);
     free(groupArray);
-    free(potentialMatches);
-    free(potentialMatchesIndices);
+    free(idxGroupMapExt);
+    free(idxGroupMapExtIndices);
 
     free(lshMatches);
     free(bestMatchDists);
@@ -520,5 +520,5 @@ int main(int argc, char** argv) {
     free(hyperplanes);
     free(baseVecs);
     free(queryVecs);
-    // free(groundTruth);
+    free(groundTruth);
 }
