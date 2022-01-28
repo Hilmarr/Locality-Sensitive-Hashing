@@ -269,7 +269,7 @@ int find_nearby_boxes(int nPlanes, int nGroups, int nPoints, int* indexGroupMap,
     *pIdxGroupMapExt = idxGroupMapExt;
     *pIdxGroupMapExtIndices = idxGroupMapExtIndices;
 
-    return idxGroupMapExtLen;
+    return cnt;
 }
 
 int main(int argc, char** argv) {
@@ -326,11 +326,44 @@ int main(int argc, char** argv) {
     int* groupIndexMap = (int*)malloc((nGroups + 1) * sizeof(int));
     int* groupArray = (int*)malloc(nBaseVecs * sizeof(int));
 
+#ifdef TIME_LSH
+    struct timeval time;
+    long startTime;
+    long endTime;
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
     calculate_hash_values(nBaseVecs, baseVecs, nPlanes, hyperplanes,
                           indexGroupMap);
 
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("calculate_hash_values for base vectors:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
     organize_points_into_groups(nBaseVecs, nGroups, indexGroupMap,
                                 groupArray, groupIndexMap);
+
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("organize_points_into_groups:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
     free(indexGroupMap);
 
@@ -363,23 +396,67 @@ int main(int argc, char** argv) {
 
     // - Calculate hash points for query vectors -
 
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
     calculate_hash_values_and_dists(nQueryVecs, queryVecs, nPlanes, hyperplanes,
                           indexGroupMap, sqrdDists);
 
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("calculate_hash_values_and_dists for query vectors:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
     int* idxGroupMapExt;
     int* idxGroupMapExtIndices;
+
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
     find_nearby_boxes(nPlanes, nGroups, nQueryVecs,
                       indexGroupMap, sqrdDists,
                       &idxGroupMapExt, &idxGroupMapExtIndices);
 
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("find_nearby_boxes for query vectors:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
     free(indexGroupMap);
+
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
     // - Compare points -
     match_points(nQueryVecs, queryVecs, baseVecs,
                  idxGroupMapExtIndices, idxGroupMapExt, groupIndexMap, groupArray,
                  lshMatches, bestMatchDists, lshMatches2, bestMatchDists2);
 
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("match points:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
 
     // --- Check matches ---
 

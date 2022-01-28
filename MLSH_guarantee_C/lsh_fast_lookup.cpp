@@ -98,13 +98,10 @@ void organize_points_into_groups(
     int** __restrict__ pGroupArray,
     int** __restrict__ pGroupIndexMap)
 {
-    // fprintf(stderr, " --- 1\n");
     int* groupIndexMap = (int*)malloc((nGroups + 1) * sizeof(int));
 
     int* groupSizeMap = (int*) calloc(nGroups, sizeof(int));
     int* groupIndexMapTails = (int*) calloc(nGroups, sizeof(int));
-
-    // fprintf(stderr, " --- 2\n");
 
     // find the size of each group
     for (int i = 0; i < nPoints; i++) {
@@ -117,8 +114,6 @@ void organize_points_into_groups(
         }
     }
 
-    // fprintf(stderr, " --- 3\n");
-
     // Find group indices into the group array 'groupArray'
     // // find group indices using exclusive scan of the group sizes
     //  std::exclusive_scan(groupSizeMap, groupSizeMap + nGroups - 1);
@@ -128,11 +123,8 @@ void organize_points_into_groups(
         groupIndexMap[i] = cnt;
         groupIndexMapTails[i] = cnt;
         cnt += groupSizeMap[i];
-        // printf("cnt = %d\n", cnt);
     }
     groupIndexMap[nGroups] = cnt;
-
-    // fprintf(stderr, " --- 4\n");
 
     int* groupArray = (int*) malloc(cnt * sizeof(int));
 
@@ -149,8 +141,6 @@ void organize_points_into_groups(
             groupArray[idx] = i;
         }
     }
-
-    // fprintf(stderr, " --- 5\n");
 
     free(groupSizeMap);
     free(groupIndexMapTails);
@@ -302,7 +292,7 @@ int find_nearby_boxes(int nPlanes, int nGroups, int nPoints, int* indexGroupMap,
     *pIdxGroupMapExt = idxGroupMapExt;
     *pIdxGroupMapExtIndices = idxGroupMapExtIndices;
 
-    return idxGroupMapExtLen;
+    return cnt;
 }
 
 int main(int argc, char** argv)
@@ -373,21 +363,9 @@ int main(int argc, char** argv)
     int* groupIndexMap;
     int* groupArray;
 
-    // fprintf(stderr,"1\n");
-
     organize_points_into_groups(nBaseVecs, nGroups,
                                 idxGroupMapExt, idxGroupMapExtIndices,
                                 &groupArray, &groupIndexMap);
-
-    // fprintf(stderr,"%d\n", groupIndexMap[nGroups]);
-    // for (int i = 0; i < nGroups + 1; i++) {
-    //     fprintf(stderr, "groupIndexMap[%d] = %d\n", i, groupIndexMap[i]);
-    // }
-    // for (int i = 0; i < groupIndexMap[nGroups]; i++) {
-    //     fprintf(stderr, "groupArray[%d] = %d\n", i, groupArray[i]);
-    // }
-
-    // fprintf(stderr,"2\n");
 
     free(indexGroupMap);
     free(idxGroupMapExt);
@@ -422,12 +400,10 @@ int main(int argc, char** argv)
     calculate_hash_values(nQueryVecs, queryVecs, nPlanes, hyperplanes,
                           indexGroupMap);
 
-    // fprintf(stderr, "3\n");
     // - Compare points -
     match_points(nQueryVecs, queryVecs, baseVecs, indexGroupMap,
                  groupIndexMap, groupArray,
                  lshMatches, bestMatchDists, lshMatches2, bestMatchDists2);
-    // fprintf(stderr, "4\n");
 
     free(indexGroupMap);
 
