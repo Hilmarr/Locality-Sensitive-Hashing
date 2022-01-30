@@ -1,0 +1,88 @@
+Creating good hyperplanes:
+
+Use training dataset
+
+
+Create set
+
+While (need more hyperplanes)
+{
+	Create two random hyperplanes
+
+	Make them orthogonal to all other hyperplanes in the set
+
+	Subtact a constant times the second hyperplane from
+	the first hyperplane s.t. the first hyperplane sums to 0
+
+	Discard second hyperplane
+
+	Check how well hyperplane divides the training dataset
+
+	Check the average distance from the hyperplane
+
+	if the hyperplane splits the training dataset well enough
+	   and the average distance is above a certain threshold
+
+		- add the hyperplane to the set
+
+	otherwise
+
+		- discard the hyperplane and try again
+}
+
+
+
+OR
+
+Create set
+
+While (need more hyperplanes)
+{
+
+	Create X + 1 random hyperplanes
+
+	Make them orthogonal to all other hyperplanes in the set
+
+	Subtact some constants times the last hyperplane from the other hyperplanes
+	s.t. each of the other hyperplanes all sum to 0
+
+	Discard the last hyperplane
+
+	Check how well each of the X hyperplanes divide the training dataset
+
+	Check the average distance from the hyperplane
+
+	Create som score depending on both how well the hyperplane splits the dataset
+	and on the average distance from the hyperplane
+
+	Choose the hyperplane with the best score
+
+}
+
+// may also use some threshold in addition to the score
+
+
+
+Create set
+
+While (need more hyperplanes)
+{
+
+	Create X random hyperplanes
+
+	Make them orthogonal to all other hyperplanes in the set
+
+	Check how well each of the X hyperplanes divide the training dataset
+
+	Check the average distance from the hyperplane
+
+	Create som score depending on both how well the hyperplane splits the dataset
+	and on the average distance from the hyperplane
+
+	Choose the hyperplane with the best score
+}
+
+
+
+Maybe: PCA
+
