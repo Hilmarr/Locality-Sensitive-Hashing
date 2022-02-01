@@ -57,8 +57,9 @@ for nPlanes = 1:maxPlanes
     positiveSide = (0.5 - positiveSide).^2;
     positiveSide = positiveSide / std(positiveSide);
     
+    squaredDists = squaredDists / nPoints;
     for i = 1:nAlternatives
-        squaredDists(i) = nPoints / (1 + squaredDists(i)*squaredDists(i));
+        squaredDists(i) = 1 / (1 + squaredDists(i)*squaredDists(i));
     end
     squaredDists = squaredDists / std(squaredDists);
 
