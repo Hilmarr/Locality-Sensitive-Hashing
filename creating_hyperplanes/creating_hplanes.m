@@ -59,7 +59,7 @@ for nPlanes = 1:maxPlanes
     
     squaredDists = squaredDists / nPoints;
     for i = 1:nAlternatives
-        squaredDists(i) = 1 / (1 + squaredDists(i)*squaredDists(i));
+        squaredDists(i) = 1 / (1 + squaredDists(i));
     end
     squaredDists = squaredDists / std(squaredDists);
 
