@@ -1,25 +1,21 @@
 % set seed
 rng(0)
 
-nPoints = 25000;
+nPoints = 100;
 vectorLength = 128;
 
 % Let these be the points to fit the hyperplanes to for now
-% points = 2*rand(nPoints, vectorLength) - 1;
-points = fvecs_read("../test_data/siftsmall/siftsmall_learn.fvecs", nPoints);
-points = points';
+points = 2*rand(nPoints, vectorLength) - 1;
 
 maxPlanes = 32;
 hyperplanes = zeros(maxPlanes, vectorLength);
 
-nAlternatives = 1000;
+nAlternatives = 100;
 
 positiveSide = zeros(1,nAlternatives);
 squaredDists = zeros(1,nAlternatives);
 
 for nPlanes = 1:maxPlanes
-    fprintf("Finding hyperplane %d of %d\n", nPlanes, maxPlanes);
-    
     % Get alternatives as well as some extra to adjust them
     alts = 2*rand(2*nAlternatives, vectorLength) - 1;
    
@@ -76,7 +72,6 @@ for nPlanes = 1:maxPlanes
     
 end
 
-fprintf("Finished finding hyperplanes\n");
 
 % Test
 
@@ -87,15 +82,7 @@ positiveSide2 = zeros(1,maxPlanes);
 squaredDists2 = zeros(1,maxPlanes);
 
 % Random hyperplanes
-% Need to make them sum to one when testing on real points
-randplanes = rand(maxPlanes*2, vectorLength);
-
-% Normalize random hyperplanes
-for i = 1:maxPlanes
-    randplanes(i,:) = randplanes(i,:) ...
-        - (sum(randplanes(i,:)) / sum(randplanes(maxPlanes+i,:))) ...
-          * randplanes(maxPlanes+i,:);
-end
+randplanes = rand(maxPlanes, vectorLength);
 
 % Normalize random hyperplanes
 for i = 1:maxPlanes
@@ -128,26 +115,22 @@ end
 
 positiveSide = positiveSide / nPoints;
 squaredDists = squaredDists / nPoints;
-dists = sqrt(squaredDists);
 positiveSide2 = positiveSide2 / nPoints;
 squaredDists2 = squaredDists2 / nPoints;
-dists2 = sqrt(squaredDists2);
 
-% % Are they orthogonal?
-% cnt = 0;
-% for i = 1:32
-%     for j = (i+1):32
-% %         fprintf("hyperplanes(%d,:)*hyperplanes(%d,:)' = %f\n",...
-% %             i, j, hyperplanes(i,:)*hyperplanes(j,:)');
-%         if (abs(hyperplanes(i,:)*hyperplanes(j,:)') > 1e-10)
-%             cnt = cnt + 1;
-%         end
-%     end
-% end
-% fprintf("Number of hyperplanes not orthogonal: %d\n", cnt);
+% Are they orthogonal?
+cnt = 0;
+for i = 1:32
+    for j = (i+1):32
+%         fprintf("hyperplanes(%d,:)*hyperplanes(%d,:)' = %f\n",...
+%             i, j, hyperplanes(i,:)*hyperplanes(j,:)');
+        if (abs(hyperplanes(i,:)*hyperplanes(j,:)') > 1e-10)
+            cnt = cnt + 1;
+        end
+    end
+end
+fprintf("Number of hyperplanes not orthogonal: %d\n", cnt);
 
-fprintf("DONE\n");
 
-fileID = fopen('hyperplanes.dat','w');
-fwrite(fileID,hyperplanes','float32');
-fclose(fileID);
+
+
