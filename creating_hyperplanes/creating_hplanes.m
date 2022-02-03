@@ -6,7 +6,7 @@ vectorLength = 128;
 
 % Let these be the points to fit the hyperplanes to for now
 % points = 2*rand(nPoints, vectorLength) - 1;
-points = fvecs_read("../test_data/siftsmall/siftsmall_learn.fvecs", nPoints);
+points = fvecs_read("../test_data/sift/sift_learn.fvecs", nPoints);
 points = points';
 
 maxPlanes = 32;
@@ -151,3 +151,10 @@ fprintf("DONE\n");
 fileID = fopen('hyperplanes.dat','w');
 fwrite(fileID,hyperplanes','float32');
 fclose(fileID);
+% 
+% 
+% fid = fopen('hyperplanes.dat','r');
+% hyperplanes = fread(fid, [128, 32], 'float32');
+% hyperplanes = hyperplanes';
+% fclose(fid)
+
