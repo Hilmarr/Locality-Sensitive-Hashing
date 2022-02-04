@@ -86,3 +86,26 @@ int read_vector_file2(char* fPath, int** arr) {
 
     return nElements;
 }
+
+int read_hyperplane_tables(int nTables, int nPlanes, int vectorLength, char* fPath,
+                            float* hyperplanes) {
+    FILE* fp = fopen(fPath, "rb");
+    if (fp == NULL) {
+        fprintf(stderr, "Error opening %s for reading\n", fPath);
+        return -1;
+    }
+
+    for (int t = 0; t < nTables; t++) {
+        int ret = fread(&hyperplanes[t * nPlanes * vectorLength], 4, nPlanes * vectorLength, fp);
+        if (ret != nPlanes * vectorLength) {
+            fprintf(stderr, "Table: %d, Only %d of %d elements read\n", t, ret, nPlanes * vectorLength);
+            fclose(fp);
+            return -1;
+        }
+        fseek(fp, (32 - nPlanes) * 128 * 4, SEEK_CUR);
+    }
+
+    fclose(fp);
+
+    return 0;
+}
