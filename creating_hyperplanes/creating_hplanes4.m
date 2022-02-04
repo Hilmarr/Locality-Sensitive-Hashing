@@ -72,5 +72,5 @@ fprintf("- For all tables: Number of hyperplanes not orthogonal: %d\n", cnt);
 fprintf("- For all tables: Number of sums not zero: %d\n", cnt);
 
 fileID = fopen('hyperplaneTables.dat','w');
-fwrite(fileID,hplanes','float32');
+fwrite(fileID,hplaneTables','float32');
 fclose(fileID);

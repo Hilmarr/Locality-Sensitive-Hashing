@@ -10,7 +10,7 @@
 #include <sys/time.h>
 #endif
 
-#include "read_vector_file_funcs.h"
+#include "read_file_funcs.h"
 
 /**
  * Returns a random float between -1 and 1

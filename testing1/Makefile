@@ -2,11 +2,11 @@ CC = g++
 # CFLAGS = -Wall -Wextra -Wpedantic
 # CFLAGS = -O3 -Wall -Wextra -Wpedantic
 CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic -g -pg
-FILES = lsh_serial lsh_serial_random_points mlsh_serial mlsh_serial2
+FILES = lsh_serial lsh_serial_random_points mlsh_serial mlsh_serial2 read_hyperplane_tables
 
 .PHONY: default all clean profile_lsh
 
-default: all
+default: read_hyperplane_tables
 
 all: $(FILES)
 
@@ -16,13 +16,13 @@ all: $(FILES)
 %: %.cpp
 	$(CC) $(CFLAGS) $^ -o $@
 
-lsh_serial: lsh_serial.o read_vector_file_funcs.o
+lsh_serial: lsh_serial.o read_file_funcs.o
 	$(CC) $(CFLAGS) $^ -o $@
 
-mlsh_serial: mlsh_serial.o read_vector_file_funcs.o
+mlsh_serial: mlsh_serial.o read_file_funcs.o
 	$(CC) $(CFLAGS) $^ -o $@
 
-mlsh_serial2: mlsh_serial2.o read_vector_file_funcs.o
+mlsh_serial2: mlsh_serial2.o read_file_funcs.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 # profile_lsh:
