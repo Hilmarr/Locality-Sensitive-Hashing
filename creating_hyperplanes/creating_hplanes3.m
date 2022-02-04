@@ -8,26 +8,26 @@ vectorLength = 128;
 maxPlanes = 32;
 hplanes = 2*rand(maxPlanes, vectorLength)-1;
 
-for curPlane = 1:maxPlanes
+for i = 1:maxPlanes
     
     % Other orthogonal vector that we can add to the hyperplane
     other = 2*rand(1, vectorLength) - 1;
    
     % Make it orthogonal to the hyperplanes
-    for j = 1:(curPlane-1)
-        hplanes(curPlane,:) = hplanes(curPlane,:) ...
-               - (hplanes(curPlane,:) * hplanes(j,:)') * hplanes(j,:);
+    for j = 1:(i-1)
+        hplanes(i,:) = hplanes(i,:) ...
+               - (hplanes(i,:) * hplanes(j,:)') * hplanes(j,:);
         
         other = other - (other * hplanes(j,:)') * hplanes(j,:);
     end
     
     % Make it sum to zero
-    hplanes(curPlane,:) = hplanes(curPlane,:) ...
-       - ((sum(hplanes(curPlane,:)) / sum(other)) * other);
+    hplanes(i,:) = hplanes(i,:) ...
+       - ((sum(hplanes(i,:)) / sum(other)) * other);
     
     % Normalize
-    hplanes(curPlane,:) = hplanes(curPlane,:) / ...
-        sqrt(hplanes(curPlane,:) * hplanes(curPlane,:)');
+    hplanes(i,:) = hplanes(i,:) / ...
+        sqrt(hplanes(i,:) * hplanes(i,:)');
    
 end
 
@@ -56,7 +56,7 @@ end
 fprintf("number of sums not zero: %d\n", cnt);
 
 
-% fileID = fopen('hyperplanes.dat','w');
-% fwrite(fileID,hplanes','float32');
-% fclose(fileID);
+fileID = fopen('hyperplanes.dat','w');
+fwrite(fileID,hplanes','float32');
+fclose(fileID);
 
