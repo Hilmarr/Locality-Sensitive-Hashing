@@ -19,8 +19,6 @@ inline float rand_minus1_to_1() {
     return ((float)rand() / (RAND_MAX/2)) - 1;
 }
 
-float fill_with_random_numbers(int nPoints, float* points, float absMax);
-
 /**
  * Fill points1 with random values.
  * Fills points2 with values in points1 + some uniform noise.
@@ -66,14 +64,6 @@ void calculate_hash_values(
     int nPlanes, float* __restrict__ hyperplanes,
     // output
     int* __restrict__ indexGroupMap);
-
-void calculate_hash_values_and_closeToHP(
-    // input
-    int vectorLength,
-    int nPoints, float* points,
-    int nPlanes, float* hyperplanes,
-    // output
-    int* indexGroupMap, int* closeToHP);
 
 /**
  * Takes as input an array of point-index-to-group mappings. Turns this into a
@@ -136,15 +126,6 @@ void calculate_indexGroupMap(
     // output
     int* __restrict__ indexGroupMap);
 
-void calculate_indexGroupMap_and_closeToHP(
-    // input
-    int vectorLength, int numTables,
-    int nPoints, float* points,
-    int nPlanes, float* hyperplanes,
-    int indexGroupMapTableLen,
-    // output
-    int* indexGroupMap, int* closeToHP);
-
 /**
  * Combines functionality of 'calculate_indexGroupMap' and 'organize_points_into_group'
  * in order to create a set of LSH tables which can later be used to match the
@@ -198,8 +179,6 @@ void construct_lsh_tables(  // input
  * @param groupIndexMap : Arrays with group indices, indexes into groupArray.
  * @param groupMapTableLen : Length of all the groupMaps (number of groups)
  * @param potentialMatchesMaxLen : The current max size of potentialMatchesLen
- * @param closeToHP : Bit map indicating if point was close to hyperplane
- * @param nPlanes : The number of hyperplanes
  * 
  * @param potentialMatches : Output - An array with indices into point1 containing the
  *                           indices of all possible matches for each point in points2
@@ -218,13 +197,12 @@ int find_potential_matches(
     int* __restrict__ groupArray, int* __restrict__ groupSizeMap,
     int* __restrict__ groupIndexMap,
     int groupMapTableLen, int potentialMatchesMaxLen,
-    int* __restrict__ closeToHP, int nPlanes,
     // outputs
     int** __restrict__ potentialMatches,
     int* __restrict__ potentialMatchesIndices,
     int* __restrict__ potentialMatchesLengths);
 
-    /**
+/**
  * Uses result from find_potential_matches to match points1 and points2
  * 
  * @param vectorLength : Number of dimensions for each point
@@ -258,16 +236,16 @@ int find_potential_matches(
  * @param bestMatchDists2 : Output - Distances between points for every match
  *                                  in lshMatches2
  */
-    void match_points(
-        // inputs
-        int vectorLength, int nPoints1, int nPoints2,
-        float* __restrict__ points1, float* __restrict__ points2,
-        int nPotentialMatches,
-        int* __restrict__ potentialMatches, int* __restrict__ potentialMatchesIndices,
-        int* __restrict__ potentialMatchesLengths,
-        // outputs
-        int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
-        int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2);
+void match_points(
+    // inputs
+    int vectorLength, int nPoints1, int nPoints2,
+    float* __restrict__ points1, float* __restrict__ points2,
+    int nPotentialMatches,
+    int* __restrict__ potentialMatches, int* __restrict__ potentialMatchesIndices,
+    int* __restrict__ potentialMatchesLengths,
+    // outputs
+    int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
+    int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2);
 
 int double_int_arr_size(int** arr, int curSize) {
     int newSize = 2*curSize;
@@ -316,12 +294,6 @@ void subtract_mean_of_1_from_both(
     // }
 }
 
-// Distance from hyperplane tolerance for checking other side of hyperplane
-const int TOL = 200;
-// distance of hyperplanes from origin
-const float distFromO = 0;
-
-// float* distsFromO;
 
 int main(int argc, char** argv) {
     srand(0);
@@ -358,11 +330,34 @@ int main(int argc, char** argv) {
     float* points1 = (float*) tmp1;
     float* points2 = (float*) tmp2;
 
-    subtract_mean_of_1_from_both(nPoints1, nPoints2, points1, points2);
+    // subtract_mean_of_1_from_both(nPoints1, nPoints2, points1, points2);
+
+    // int negativCnt = 0;
+    // for (int i = 0; i < nPoints1*128; i++) {
+    //     if (points1[i] < 0) {
+    //         printf("%f\n", points1[i]);
+    //         negativCnt++;
+    //     }
+    // }
+    // for (int i = 0; i < nPoints2 * 128; i++) {
+    //     if (points2[i] < 0) {
+    //         printf("%f\n", points2[i]);
+    //         negativCnt++;
+    //     }
+    // }
+    // printf("negative count: %d\n", negativCnt);
+
+    // subtract_mean(points1, nPoints1);
+    // subtract_mean(points2, nPoints2);
+
+    // for (int i = 0; i < nPoints1; i++) {
+    //     printf("%f\n", points1[i]);
+    // }
 
     // -- Generate some random points and similar random points to match with --
 
     const int nPlanes = (int) log2(nPoints1);
+    // const int nPlanes = 10;
 
     // -- Generate hyperplanes --
 
@@ -371,22 +366,20 @@ int main(int argc, char** argv) {
     const int hyperplanesLen = numTables * hyperplanesTableLen;
     float* hyperplanes = (float*)malloc(hyperplanesLen * sizeof(float));
 
-    // fill all hyperplanes
-    for (int table = 0; table < numTables; table++) {
-        float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
-        // create normalized hyperplanes represented by vectors of euclidean size 1
-        fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
-    }
-
-    // distsFromO = (float*) malloc(nPlanes * numTables * sizeof(float));
-    // fill_with_random_numbers(nPlanes, distsFromO, distFromO);
-    // for (int i = 0; i < nPlanes; i++) {
-    //     printf("%f\n", distsFromO[i]);
+    // // fill all hyperplanes
+    // for (int table = 0; table < numTables; table++) {
+    //     float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
+    //     // create normalized hyperplanes represented by vectors of euclidean size 1
+    //     fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
     // }
 
-    //  -- Arrays to organize groups --
+    read_hyperplane_tables(numTables, nPlanes, vectorLength,
+                          "../creating_hyperplanes/hyperplaneTables_100x32x128.dat",
+                          hyperplanes);
 
-    const int nGroups = 1 << nPlanes;
+        //  -- Arrays to organize groups --
+
+        const int nGroups = 1 << nPlanes;
     // the group that each point falls into
     const int indexGroupMapTableLen = nPoints1;
     const int indexGroupMapLen = numTables * indexGroupMapTableLen;
@@ -397,12 +390,6 @@ int main(int argc, char** argv) {
     const int indexGroupMapTableLen2 = nPoints2;
     const int indexGroupMapLen2 = numTables * indexGroupMapTableLen2;
     int* indexGroupMap2 = (int*)malloc(indexGroupMapLen2 * sizeof(int));
-    // const int closteToHPTableLen = nPoints2;
-    // const int closteToHPLen = numTables * closteToHPTableLen;
-    int* closeToHP = (int*)calloc(indexGroupMapLen2, sizeof(int));
-
-    // printf("Elements allocated: %d\n", indexGroupMapLen2);
-    // printf("Memory allocated: %ld\n", indexGroupMapLen2 * sizeof(int));
 
     // in case we're changing sizes
     const int groupMapTableLen = nGroups;
@@ -455,8 +442,8 @@ int main(int argc, char** argv) {
 
     // calculate indices into lsh tables for the matching set
     // future change: indexGroupMapTableLen can at this point just be nPoints2 * vectorLength
-    calculate_indexGroupMap_and_closeToHP(vectorLength, numTables, nPoints2, points2,
-                            nPlanes, hyperplanes, indexGroupMapTableLen2, indexGroupMap2, closeToHP);
+    calculate_indexGroupMap(vectorLength, numTables, nPoints2, points2,
+                            nPlanes, hyperplanes, indexGroupMapTableLen2, indexGroupMap2);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -469,7 +456,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Array allocation
-    int potentialMatchesMaxLen = nPoints2 * 1<<15;
+    int potentialMatchesMaxLen = nPoints2 * 128;
     int* potentialMatches = (int*)malloc(potentialMatchesMaxLen * sizeof(int));
     int* potentialMatchesIndices = (int*)malloc(nPoints2 * sizeof(int));
     int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
@@ -480,7 +467,6 @@ int main(int argc, char** argv) {
         indexGroupMap2, indexGroupMapTableLen2,
         groupArray, groupSizeMap, groupIndexMap,
         groupMapTableLen, potentialMatchesMaxLen,
-        closeToHP, nPlanes,
         // outputs
         &potentialMatches, potentialMatchesIndices,
         potentialMatchesLengths);
@@ -560,42 +546,13 @@ int main(int argc, char** argv) {
     double correctRatio = ((double) correct) / nPoints2;
     printf("Correct ratio: %f\n", correctRatio);
 
-    long unsigned int diff_both = 0;
-    long unsigned int diff_correct = 0;
-    long unsigned int diff_incorrect = 0;
-    for (int i = 0; i < nPoints2; i++) {
-        double diff = 0;
-        float* p_query = &points2[i*128];
-        float* p_base = &points1[groundTruth[i] * 128];
-        for (int j = 0; j < 128; j++) {
-            diff += (p_query[i] - p_base[i]) * (p_query[i] - p_base[i]);
-        }
-        diff = sqrt(diff);
-        diff_both += diff;
-        if (lshMatches[i] == groundTruth[i]) {
-            diff_correct += (int) diff;
-        } else {
-            diff_incorrect += (int) diff;
-        }
-    }
-    int incorrect = nPoints2 - correct;
-
-    printf("Average distance of best fits: %f\n",
-           ((double)diff_both) / nPoints2);
-    printf("Average distance correctly classified points: %f\n",
-        ((double)diff_correct) / correct);
-    printf("Average distance incorrectly classified points: %f\n",
-           ((double)diff_incorrect) / incorrect);
-
     free(points1);
     free(points2);
     free(hyperplanes);
-    // free(distsFromO);
     free(groundTruth);
 
     free(indexGroupMap);
     free(indexGroupMap2);
-    free(closeToHP);
     free(groupSizeMap);
     free(groupIndexMap);
     free(groupArray);
@@ -610,14 +567,9 @@ int main(int argc, char** argv) {
     free(potentialMatchesLengths);
 }
 
-// float fill_with_random_numbers(int nPoints, float* points, float absMax) {
-//     for (int i = 0; i < nPoints; i++) {
-//         points[i] = ((float)rand() / (RAND_MAX/(absMax*2))) - absMax;
-//     }
-// }
-
 void fill_point_arrays(int nPoints1, int nPoints2, int vectorLength, float noiseScale,
-                           float* __restrict__ points1, float* __restrict__ points2) {
+                       float* __restrict__ points1, float* __restrict__ points2)
+{
     for (int i = 0; i < ((nPoints1 < nPoints2) ? nPoints1 : nPoints2); i++) {
         float size1 = 0;
         float size2 = 0;
@@ -689,40 +641,9 @@ void calculate_hash_values(
                 vecMul += point[k] * hplane[k];
             }
             // set i'th bit to one if point is on "positive" side of hyperplane
-            if (vecMul > distFromO) {
+            if (vecMul > 0) {
                 hashcode = hashcode | (1 << j);
             }
-        }
-        indexGroupMap[i] = hashcode;  // save the hashcode
-    }
-}
-
-void calculate_hash_values_and_closeToHP(
-    // input
-    int vectorLength,
-    int nPoints, float* points,
-    int nPlanes, float* hyperplanes,
-    // output
-    int* indexGroupMap, int* closeToHP)
-{
-    // - Calculate hash values, keep track of sizes of each group -
-    for (int i = 0; i < nPoints; i++) {
-        float* point = &points[i * vectorLength];
-        int hashcode = 0;  //  hashcode will be the group index
-        // calculate hash value of the i'th point, store resut in indexGroupMap
-        for (int j = 0; j < nPlanes; j++) {
-            float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
-            // calculate point * hplane
-            float vecMul = 0;
-            // for (int k = (j%8)*16; k < (j%8)*16 + 16; k++) {
-            for (int k = 0; k < vectorLength; k++) { 
-                vecMul += point[k] * hplane[k];
-            }
-            // set i'th bit to one if point is on "positive" side of hyperplane
-            if (vecMul > distFromO) {
-                hashcode = hashcode | (1 << j);
-            }
-            closeToHP[i] += (vecMul * vecMul - distFromO * distFromO < TOL) << j;
         }
         indexGroupMap[i] = hashcode;  // save the hashcode
     }
@@ -786,27 +707,6 @@ void calculate_indexGroupMap(
     }
 }
 
-void calculate_indexGroupMap_and_closeToHP(
-    // input
-    int vectorLength, int numTables,
-    int nPoints, float* points,
-    int nPlanes, float* hyperplanes,
-    int indexGroupMapTableLen,
-    // output
-    int* indexGroupMap, int* closeToHP)
-{
-    const int hyperplanesTableLen = nPlanes * vectorLength;
-
-    for (int table = 0; table < numTables; table++) {
-        float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
-        int* indexGroupMap2 = indexGroupMap + table * nPoints;
-        int* closeToHP2 = closeToHP + table * nPoints;
-        // - Match points -
-        calculate_hash_values_and_closeToHP(
-            vectorLength, nPoints, points,
-            nPlanes, hyperplanes2, indexGroupMap2, closeToHP2);
-    }
-}
 
 void construct_lsh_tables(  // input
     int vectorLength, int numTables, int nGroups,
@@ -852,7 +752,6 @@ int find_potential_matches(
     int* __restrict__ groupArray, int* __restrict__ groupSizeMap,
     int* __restrict__ groupIndexMap,
     int groupMapTableLen, int potentialMatchesMaxLen,
-    int* __restrict__ closeToHP, int nPlanes,
     // outputs
     int** __restrict__ potentialMatches,
     int* __restrict__ potentialMatchesIndices,
@@ -870,7 +769,6 @@ int find_potential_matches(
 
         for (int table = 0; table < numTables; table++) {
             int* indexGroupMap2 = indexGroupMap + table * indexGroupMapTableLen;
-            int* closeToHP2 = closeToHP + table * indexGroupMapTableLen;
             int* groupSizeMap2 = groupSizeMap + table * groupMapTableLen;
             int* groupIndexMap2 = groupIndexMap + table * groupMapTableLen;
             int* groupArray2 = groupArray + table * groupArrayTableLen;
@@ -889,39 +787,11 @@ int find_potential_matches(
                     if (totalMatchCount >= potentialMatchesMaxLen) {
                         potentialMatchesMaxLen =
                             double_int_arr_size(potentialMatches, potentialMatchesMaxLen);
-                        printf(" maxLen = %d\n", potentialMatchesMaxLen);
+                        // printf(" maxLen = %d\n", potentialMatchesMaxLen);
                     }
 
                     (*potentialMatches)[totalMatchCount] = idx;
                     totalMatchCount++;
-                }
-            }
-
-            for (int x = 0; x < nPlanes; x++) {
-                if (closeToHP2[i] & (1 << x)) {
-                    int hashcode2 = hashcode ^ (1 << x);
-                    int size2 = groupSizeMap[hashcode2];
-                    int startIdx2 = groupIndexMap[hashcode2];
-
-                    // Add points to potentialMatches
-                    for (int j = startIdx2; j < startIdx2 + size2; j++) {
-                        int idx = groupArray2[j];
-                        if (checkedArr[idx] != i) {
-                            checkedArr[idx] = i;
-
-                            if (totalMatchCount >= potentialMatchesMaxLen) {
-                                fprintf(stderr, "Doubling array size...\n");
-                                potentialMatchesMaxLen =
-                                    double_int_arr_size(potentialMatches, potentialMatchesMaxLen);
-                                printf(" maxLen = %d\n", potentialMatchesMaxLen);
-                                fprintf(stderr, "Done doubling array size...\n");
-                            }
-
-                            (*potentialMatches)[totalMatchCount] = idx;
-
-                            totalMatchCount++;
-                        }
-                    }
                 }
             }
         }

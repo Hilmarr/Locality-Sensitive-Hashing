@@ -358,11 +358,12 @@ int main(int argc, char** argv) {
     float* points1 = (float*) tmp1;
     float* points2 = (float*) tmp2;
 
-    subtract_mean_of_1_from_both(nPoints1, nPoints2, points1, points2);
+    // subtract_mean_of_1_from_both(nPoints1, nPoints2, points1, points2);
 
     // -- Generate some random points and similar random points to match with --
 
     const int nPlanes = (int) log2(nPoints1);
+    // const int nPlanes = 16;
 
     // -- Generate hyperplanes --
 
@@ -371,12 +372,16 @@ int main(int argc, char** argv) {
     const int hyperplanesLen = numTables * hyperplanesTableLen;
     float* hyperplanes = (float*)malloc(hyperplanesLen * sizeof(float));
 
-    // fill all hyperplanes
-    for (int table = 0; table < numTables; table++) {
-        float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
-        // create normalized hyperplanes represented by vectors of euclidean size 1
-        fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
-    }
+    // // fill all hyperplanes
+    // for (int table = 0; table < numTables; table++) {
+    //     float* hyperplanes2 = hyperplanes + table * hyperplanesTableLen;
+    //     // create normalized hyperplanes represented by vectors of euclidean size 1
+    //     fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
+    // }
+
+    read_hyperplane_tables(numTables, nPlanes, vectorLength,
+                           "../creating_hyperplanes/hyperplaneTables_100x32x128.dat",
+                           hyperplanes);
 
     // distsFromO = (float*) malloc(nPlanes * numTables * sizeof(float));
     // fill_with_random_numbers(nPlanes, distsFromO, distFromO);
