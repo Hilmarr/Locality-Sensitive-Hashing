@@ -1,7 +1,7 @@
 % set seed
 rng(0)
 
-nPoints = 25000;
+nPoints = 100;
 vectorLength = 128;
 
 % Let these be the points to fit the hyperplanes to for now
@@ -9,13 +9,19 @@ vectorLength = 128;
 points = fvecs_read("../test_data/sift/sift_learn.fvecs", nPoints);
 points = points';
 
-maxPlanes = 32;
+maxPlanes = 8;
 hyperplanes = zeros(maxPlanes, vectorLength);
 
-nAlternatives = 1000;
+nAlternatives = 10;
 
-positiveSide = zeros(1,nAlternatives);
-squaredDists = zeros(1,nAlternatives);
+splitScore = zeros(1, nAlternatives);
+absDists = zeros(1,nAlternatives);
+
+groupSizes = zeros(1,1);
+groupSizes(1) = nPoints;
+groupArray = 1:nPoints;
+groupArray2 = zeros(1,nPoints); % Temporary array
+whichSide = zeros(1,nPoints); % Temporary array
 
 for nPlanes = 1:maxPlanes
     fprintf("Finding hyperplane %d of %d\n", nPlanes, maxPlanes);
@@ -48,34 +54,81 @@ for nPlanes = 1:maxPlanes
    
     % Create scores for how well it separates the search space
     % and for average distance between point and hyperplane
+    nGroups = 2^(nPlanes-1);
+    
     for i = 1:nAlternatives
-        positiveSide(i) = 0;
-        squaredDists(i) = 0;
-        for j = 1:nPoints
-            prod = alts(i,:) * points(j,:)';
-            if (prod > 0)
-                positiveSide(i) = positiveSide(i) + 1;
+        splitScore(i) = 0;
+        idx = 1;
+        for j = 1:nGroups
+            positiveSide = 0;
+            for k = idx:(idx+groupSizes(j)-1)
+                prod = alts(i,:) * points(groupArray(k),:)';
+                if (prod > 0)
+                    positiveSide = positiveSide + 1;
+                end
+                absDists(i) = absDists(i) + abs(prod);
             end
-            squaredDists(i) = squaredDists(i) + prod*prod;
+            negativeSide = groupSizes(j) - positiveSide;
+            splitScore(i) = splitScore(i) + min(negativeSide, positiveSide);
+            
+            idx = idx + groupSizes(j);
         end
     end
-    positiveSide = positiveSide / nPoints;
-    positiveSide = (0.5 - positiveSide).^2;
-    positiveSide = positiveSide / std(positiveSide);
-    
-    squaredDists = squaredDists / nPoints;
-    for i = 1:nAlternatives
-        squaredDists(i) = 1 / (1 + squaredDists(i));
-    end
-    squaredDists = squaredDists / std(squaredDists);
 
-    cost = positiveSide + squaredDists;
+    splitScore = splitScore / max(splitScore);
+    
+    absDists = absDists / max(absDists);
+
+    score = absDists + splitScore;
     
     % Add hyperplane with best scores to the hyperplane list
-    [minimum_score, bestIdx] = min(cost);
+    [minimum_score, bestIdx] = max(score);
     
     hyperplanes(nPlanes,:) = alts(bestIdx,:);
     
+    % Recreate groupSizes and groupArray
+    hplane = hyperplanes(nPlanes,:);
+    nGroups2 = 2*nGroups;
+    groupSizes2 = zeros(1,nGroups2);
+    
+    idx = 1;
+    for i = 1:nGroups
+        for k = idx:(idx+groupSizes(i)-1)
+            prod = hplane * points(groupArray(k),:)';
+%             fprintf("prod=%f, groupArray(%d)=%d,  ", prod, i, groupArray(i));
+            if (prod <= 0)
+%                 fprintf("negative side\n");
+                groupSizes2(2*i-1) = groupSizes2(2*i-1) + 1;
+                whichSide(k) = 1;
+            else
+%                 fprintf("positive side\n");
+                groupSizes2(2*i) = groupSizes2(2*i) + 1;
+                whichSide(k) = 2;
+            end
+        end
+        nextIdx1 = idx;
+        nextIdx2 = idx + groupSizes2(2*i-1);
+        for k = idx:(idx+groupSizes(i)-1)
+            if (whichSide(k) == 1)
+                groupArray2(nextIdx1) = groupArray(k);
+                nextIdx1 = nextIdx1 + 1;
+            else
+                groupArray2(nextIdx2) = groupArray(k);
+                nextIdx2 = nextIdx2 + 1;
+            end
+        end
+        
+        idx = idx + groupSizes(i);
+%         fprintf("idx=%d\n", idx);
+    end
+    
+%     for i = 1:nPoints
+%         groupArray(i) = groupArray2(i);
+%     end
+
+    groupArray = groupArray2;
+    
+    groupSizes = groupSizes2;
 end
 
 fprintf("Finished finding hyperplanes\n");
@@ -83,7 +136,7 @@ fprintf("Finished finding hyperplanes\n");
 % Test
 
 positiveSide = zeros(1,maxPlanes);
-squaredDists = zeros(1,maxPlanes);
+absDists = zeros(1,maxPlanes);
 
 positiveSide2 = zeros(1,maxPlanes);
 squaredDists2 = zeros(1,maxPlanes);
@@ -114,7 +167,7 @@ for i = 1:maxPlanes
         if (prod > 0)
             positiveSide(i) = positiveSide(i) + 1;
         end
-        squaredDists(i) = squaredDists(i) + prod*prod;
+        absDists(i) = absDists(i) + prod*prod;
     end
 end
     
@@ -129,16 +182,16 @@ for i = 1:maxPlanes
 end
 
 positiveSide = positiveSide / nPoints;
-squaredDists = squaredDists / nPoints;
-dists = sqrt(squaredDists);
+absDists = absDists / nPoints;
+dists = sqrt(absDists);
 positiveSide2 = positiveSide2 / nPoints;
 squaredDists2 = squaredDists2 / nPoints;
 dists2 = sqrt(squaredDists2);
 
 % % Are they orthogonal?
 % cnt = 0;
-% for i = 1:32
-%     for j = (i+1):32
+% for i = 1:maxPlanes
+%     for j = (i+1):maxPlanes
 % %         fprintf("hyperplanes(%d,:)*hyperplanes(%d,:)' = %f\n",...
 % %             i, j, hyperplanes(i,:)*hyperplanes(j,:)');
 %         if (abs(hyperplanes(i,:)*hyperplanes(j,:)') > 1e-10)
