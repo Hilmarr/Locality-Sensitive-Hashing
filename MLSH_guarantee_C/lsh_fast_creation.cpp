@@ -15,7 +15,7 @@
 // Globally defined so that the compiler might make assumptions about it
 // later on if expedient
 const int vectorLength = 128;
-const int _THRESHOLD = 50;
+const int _THRESHOLD = 40;
 const int THRESHOLD = _THRESHOLD * _THRESHOLD;  // Threshold to check on other side of hyperplane(s)
 
 inline int set_int_arr_size(int** arr, int curSize, int newSize) {
@@ -217,7 +217,8 @@ int find_potential_matches(
     int* groupIndexMap, int* groupArray,
     int** pPotentialMatches, int** pPotentialMatchesIndices)
 {
-    int potentialMatchesLen = 1000 * nPoints;
+    // int potentialMatchesLen = 1e4 * nPoints;
+    int potentialMatchesLen = 1e9;
     int* potentialMatches = (int*)malloc(potentialMatchesLen * sizeof(int));
     int* potentialMatchesIndices = (int*)malloc((nPoints + 1) * sizeof(int));
 
@@ -250,9 +251,10 @@ int find_potential_matches(
             // Check if we have reserved enough memory
             if (cnt + groupSize >= potentialMatchesLen) {
                 fprintf(stderr, "Not enough with %d elements for potentialMatches. ", potentialMatchesLen);
-                fprintf(stderr, "Expanding to %d elements\n", 2 * (cnt + groupSize));
-                potentialMatchesLen = set_int_arr_size(
-                    &potentialMatches, potentialMatchesLen, 2 * (cnt + groupSize));
+                // fprintf(stderr, "Expanding to %d elements\n", 2 * (cnt + groupSize));
+                // potentialMatchesLen = set_int_arr_size(
+                //     &potentialMatches, potentialMatchesLen, 2 * (cnt + groupSize));
+                exit(1);
             }
             // Add point indices in group hc to potentialMatches
             for (int k = kStart; k < kEnd; k++) {
@@ -443,10 +445,18 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    find_potential_matches(nPlanes, nGroups, nQueryVecs,
-                           indexGroupMap, sqrdDists,
-                           groupIndexMap, groupArray,
-                           &potentialMatches, &potentialMatchesIndices);
+    int potentialMatchesFound;
+
+    potentialMatchesFound = find_potential_matches(
+        nPlanes, nGroups, nQueryVecs,
+        indexGroupMap, sqrdDists,
+        groupIndexMap, groupArray,
+        &potentialMatches, &potentialMatchesIndices);
+
+    // find_potential_matches(nPlanes, nGroups, nQueryVecs,
+    //                        indexGroupMap, sqrdDists,
+    //                        groupIndexMap, groupArray,
+    //                        &potentialMatches, &potentialMatchesIndices);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -525,6 +535,8 @@ int main(int argc, char** argv) {
            ((double)diff_correct) / correct);
     printf("Average distance incorrectly classified points: %f\n",
            ((double)diff_incorrect) / incorrect);
+
+    printf("Potential matches found and checked: %d\n", potentialMatchesFound);
 
     // --- Free memory ---
 

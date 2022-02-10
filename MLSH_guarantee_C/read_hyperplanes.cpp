@@ -1,14 +1,16 @@
 #include <iostream>
 
 int main() {
-    char fPath[] = "../hyperplanes.dat";
+    // char fPath[] = "../hyperplanes.dat";
+    // char fPath[] = "../creating_hyperplanes/hyperplanes_attempt1.dat";
+    char fPath[] = "../creating_hyperplanes/hyperplanes.dat";
     FILE* fp = fopen(fPath, "rb");
     if (fp == NULL) {
         fprintf(stderr, "Error opening %s for reading\n", fPath);
         return -1;
     }
 
-    const int nHplanes = 70;
+    const int nHplanes = 32;
     const int hPlaneLen = 128;
 
     float* hPlanes = (float*) malloc(nHplanes * hPlaneLen * sizeof(float));
@@ -30,12 +32,12 @@ int main() {
     //     printf("%f\n", hPlanes[j]);
     // }
 
-    // for (int i = 0; i < nHplanes; i++) {
-    //     for (int j = 0; j < hPlaneLen; j++) {
-    //         printf("%f ", hPlanes[i*hPlaneLen + j]);
-    //     }
-    //     printf("\n");
-    // }
+    for (int i = 0; i < nHplanes; i++) {
+        for (int j = 0; j < hPlaneLen; j++) {
+            printf("%f ", hPlanes[i*hPlaneLen + j]);
+        }
+        printf("\n\n");
+    }
 
     int cnt = 0;
     for (int i = 0; i < nHplanes; i++) {

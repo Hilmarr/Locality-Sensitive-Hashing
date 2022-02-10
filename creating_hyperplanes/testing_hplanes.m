@@ -1,4 +1,4 @@
-nPlanes = 8;
+nPlanes = 20;
 
 fileID = fopen('hyperplanes.dat','r');
 hplanes = fread(fileID,[128,nPlanes],'float32');
