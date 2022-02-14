@@ -92,7 +92,7 @@ squaredDists2 = zeros(1,maxPlanes);
 % Need to make them sum to one when testing on real points
 randplanes = rand(maxPlanes*2, vectorLength);
 
-% Normalize random hyperplanes
+% Make random hyperplanes sum to zero
 for i = 1:maxPlanes
     randplanes(i,:) = randplanes(i,:) ...
         - (sum(randplanes(i,:)) / sum(randplanes(maxPlanes+i,:))) ...

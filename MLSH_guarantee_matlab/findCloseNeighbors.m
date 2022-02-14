@@ -1,7 +1,7 @@
-function [N, hashcodes] = ...
+function [N, hashcodes, combDists] = ...
     findCloseNeighbors(sqrdDists, threshold, nPlanes, hashcode)
 
-    [setLen, combMasks] = findNeighborMasks(sqrdDists, threshold, nPlanes);
+    [setLen, combMasks, combDists] = findNeighborMasks(sqrdDists, threshold, nPlanes);
     N = setLen+1;
     
     hashcodes = zeros(N);

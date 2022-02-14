@@ -7,7 +7,7 @@ FILES = lsh_serial lsh_serial_random_points mlsh_serial mlsh_serial2 \
 
 .PHONY: default all clean profile_lsh
 
-default: mlsh_serial_loadHP mlsh_serial
+default: all
 
 all: $(FILES)
 

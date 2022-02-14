@@ -1,12 +1,12 @@
 % set seed
 rng(0)
 
-nPoints = 25000;
+nPoints = 100000;
 vectorLength = 128;
 
 % Let these be the points to fit the hyperplanes to for now
 % points = 2*rand(nPoints, vectorLength) - 1;
-points = fvecs_read("../test_data/sift/sift_learn.fvecs", [nPoints, 2*nPoints]);
+points = fvecs_read("../test_data/sift/sift_learn.fvecs", nPoints);
 points = points';
 
 maxPlanes = 20;

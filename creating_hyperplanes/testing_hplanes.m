@@ -1,6 +1,6 @@
 nPlanes = 20;
 
-fileID = fopen('hyperplanes.dat','r');
+fileID = fopen('better_hyperplanes_2.dat','r');
 hplanes = fread(fileID,[128,nPlanes],'float32');
 fclose(fileID);
 hplanes = hplanes';

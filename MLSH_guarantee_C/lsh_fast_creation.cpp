@@ -554,5 +554,5 @@ int main(int argc, char** argv) {
     free(hyperplanes);
     free(baseVecs);
     free(queryVecs);
-    // free(groundTruth);
+    free(groundTruth);
 }
