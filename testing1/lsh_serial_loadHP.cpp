@@ -300,16 +300,17 @@ int main(int argc, char** argv) {
     int nPoints1 = 0;     // number of points in the first dataset
     int nPoints2 = 0;       // number of points in the second dataset
     const int vectorLength = 128;
-    const int numTables = 15;
+    const int numTables = 16;
 
     // -- Read points from file --
 
     // Check number of arguments
-    if (argc < 4) {
+    if (argc < 5) {
         fprintf(stderr, "Program needs to be given 3 files as arguments:\n");
         fprintf(stderr, " 1. .fvec vector file with feature descriptors (base set)\n");
         fprintf(stderr, " 2. .fvec vector file with feature descriptors (query set)\n");
         fprintf(stderr, " 3. .ivec vector file (Ground truth)\n");
+        fprintf(stderr, " 4. binary file with hyperplanes\n");
         return -1;
     }
 
@@ -373,13 +374,24 @@ int main(int argc, char** argv) {
     //     fill_hyperplanes(nPlanes, vectorLength, hyperplanes2);
     // }
 
-    read_hyperplane_tables(numTables, nPlanes, vectorLength,
-                          "../creating_hyperplanes/hyperplaneTables_100x32x128.dat",
-                          hyperplanes);
+    // read_hyperplane_tables(numTables, nPlanes, vectorLength,
+    //                       "../creating_hyperplanes/hyperplaneTables_100x32x128.dat",
+    //                       hyperplanes);
+    
+    // Load hyperplanes
+    // char* fPath = "../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat";
+    // char* fPath = "../creating_hyperplanes/unitHPlaneAlmostZeroSum_0_1.dat";
+    FILE* fp = fopen(argv[4], "rb");
+    if (fp == NULL) {
+        fprintf(stderr, "Error opening %s for reading\n", argv[4]);
+        return -1;
+    }
+    fread(hyperplanes, 4, numTables * nPlanes * vectorLength, fp);
+    fclose(fp);
 
-        //  -- Arrays to organize groups --
+    //  -- Arrays to organize groups --
 
-        const int nGroups = 1 << nPlanes;
+    const int nGroups = 1 << nPlanes;
     // the group that each point falls into
     const int indexGroupMapTableLen = nPoints1;
     const int indexGroupMapLen = numTables * indexGroupMapTableLen;
@@ -426,7 +438,7 @@ int main(int argc, char** argv) {
                          groupSizeMap, groupIndexMap);
 
 #ifdef TIME_LSH
-        gettimeofday(&time, NULL);
+    gettimeofday(&time, NULL);
     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
     printf("Constructing lsh tables:\n");
     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
@@ -470,7 +482,7 @@ int main(int argc, char** argv) {
         // outputs
         &potentialMatches, potentialMatchesIndices,
         potentialMatchesLengths);
-
+    
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
@@ -537,6 +549,13 @@ int main(int argc, char** argv) {
     // for (int i = 0; i < vectorLength; i++) {
     //     printf("%f, %f\n", points2[3*128+i], points1[groundTruth[3]*128 + i]);
     // }
+
+    printf("\n");
+    printf("Potential matches found: %d\n", nPotentialMatches);
+    double matchesPerQueryVector = ((double)nPotentialMatches) / nPoints2;
+    printf("Comparisons per query vector: %f\n", matchesPerQueryVector);
+    printf("Average portion of search space searched: %f\n", matchesPerQueryVector / nPoints1);
+    printf("\n");
 
     // - Check how many matches were correct -
     int correct = 0;

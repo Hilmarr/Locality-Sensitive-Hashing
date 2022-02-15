@@ -77,13 +77,16 @@ run_lsh_serial_loadHP_siftsmall: lsh_serial_loadHP
 	./lsh_serial_loadHP \
 	../test_data/siftsmall/siftsmall_base.fvecs \
 	../test_data/siftsmall/siftsmall_query.fvecs \
-	../test_data/siftsmall/siftsmall_groundtruth.ivecs
+	../test_data/siftsmall/siftsmall_groundtruth.ivecs \
+ 	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+#	../creating_hyperplanes/unitHPlaneAlmostZeroSum_0_1.dat
 
 run_lsh_serial_loadHP_sift: lsh_serial_loadHP
 	./lsh_serial_loadHP \
 	../test_data/sift/sift_base.fvecs \
 	../test_data/sift/sift_query.fvecs \
-	../test_data/sift/sift_groundtruth.ivecs
+	../test_data/sift/sift_groundtruth.ivecs \
+ 	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
 
 run_mlsh_serial_loadHP_siftsmall: mlsh_serial_loadHP
 	./mlsh_serial_loadHP \

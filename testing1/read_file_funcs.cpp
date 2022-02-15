@@ -109,3 +109,18 @@ int read_hyperplane_tables(int nTables, int nPlanes, int vectorLength, char* fPa
 
     return 0;
 }
+
+// int read_hyperplanes(int nTables, int nPlanes, int vectorLength, char* fPath,
+//                            float* hyperplanes) {
+//     FILE* fp = fopen(fPath, "rb");
+//     if (fp == NULL) {
+//         fprintf(stderr, "Error opening %s for reading\n", fPath);
+//         return -1;
+//     }
+
+//     int ret = fread(hyperplanes, 4, nTables * nPlanes * vectorLength, fp);
+
+//     fclose(fp);
+
+//     return ret;
+// }

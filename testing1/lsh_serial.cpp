@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
     int nPoints1 = 0;     // number of points in the first dataset
     int nPoints2 = 0;       // number of points in the second dataset
     const int vectorLength = 128;
-    const int numTables = 15;
+    const int numTables = 23;
 
     // -- Read points from file --
 
@@ -532,6 +532,13 @@ int main(int argc, char** argv) {
     // for (int i = 0; i < vectorLength; i++) {
     //     printf("%f, %f\n", points2[3*128+i], points1[groundTruth[3]*128 + i]);
     // }
+
+    printf("\n");
+    printf("Potential matches found: %d\n", nPotentialMatches);
+    double matchesPerQueryVector = ((double)nPotentialMatches) / nPoints2;
+    printf("Comparisons per query vector: %f\n", matchesPerQueryVector);
+    printf("Average portion of search space searched: %f\n", matchesPerQueryVector / nPoints1);
+    printf("\n");
 
     // - Check how many matches were correct -
     int correct = 0;
