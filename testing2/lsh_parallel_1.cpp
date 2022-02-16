@@ -557,6 +557,40 @@ void fill_hyperplanes(int nPlanes, int vectorLength, float* hyperplanes) {
     }
 }
 
+// void calculate_hash_values(
+//     // input
+//     int vectorLength,
+//     int nPoints, float* __restrict__ points,
+//     int nPlanes, float* __restrict__ hyperplanes,
+//     // output
+//     int* __restrict__ indexGroupMap)
+// {
+//     // - Calculate hash values, keep track of sizes of each group -
+//     #pragma acc parallel loop 
+//     for (int i = 0; i < nPoints; i++) {
+
+//         float* point = &points[i * vectorLength];
+//         int hashcode = 0;  //  hashcode will be the group index
+
+//         // calculate hash value of the i'th point, store resut in indexGroupMap
+//         // #pragma acc loop
+//         for (int j = 0; j < nPlanes; j++) {
+//             float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
+//             // calculate point * hplane
+//             float vecMul = 0;
+//             // #pragma acc loop
+//             for (int k = 0; k < vectorLength; k++) {
+//                 vecMul += point[k] * hplane[k];
+//             }
+//             // set i'th bit to one if point is on "positive" side of hyperplane
+//             if (vecMul > 0) {
+//                 hashcode = hashcode | (1 << j);
+//             }
+//         }
+//         indexGroupMap[i] = hashcode;  // save the hashcode
+//     }
+// }
+
 void calculate_hash_values(
     // input
     int vectorLength,
@@ -566,27 +600,37 @@ void calculate_hash_values(
     int* __restrict__ indexGroupMap)
 {
     // - Calculate hash values, keep track of sizes of each group -
-    for (int i = 0; i < nPoints; i++) {
+    #pragma acc data \
+      pcopyin(points[nPoints*vectorLength]) \
+      pcopyin(hyperplanes[nPlanes*vectorLength]) \
+      pcopyout(indexGroupMap[nPoints])
+    {
+        #pragma acc parallel loop gang worker num_workers(128) vector_length(8)
+        for (int i = 0; i < nPoints; i++) {
 
-        float* point = &points[i * vectorLength];
-        int hashcode = 0;  //  hashcode will be the group index
+            float* point = &points[i * vectorLength];
+            int hashcode = 0;  //  hashcode will be the group index
 
-        // calculate hash value of the i'th point, store resut in indexGroupMap
-        for (int j = 0; j < nPlanes; j++) {
-            float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
-            // calculate point * hplane
-            float vecMul = 0;
-            for (int k = 0; k < vectorLength; k++) {
-                vecMul += point[k] * hplane[k];
+            // calculate hash value of the i'th point, store resut in indexGroupMap
+            #pragma acc loop reduction(|:hashcode) vector
+            for (int j = 0; j < nPlanes; j++) {
+                float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
+                // calculate point * hplane
+                float vecMul = 0;
+                #pragma acc loop reduction(+:vecMul) seq
+                for (int k = 0; k < vectorLength; k++) {
+                    vecMul += point[k] * hplane[k];
+                }
+                // set i'th bit to one if point is on "positive" side of hyperplane
+                if (vecMul > 0) {
+                    hashcode = hashcode | (1 << j);
+                }
             }
-            // set i'th bit to one if point is on "positive" side of hyperplane
-            if (vecMul > 0) {
-                hashcode = hashcode | (1 << j);
-            }
+            indexGroupMap[i] = hashcode;  // save the hashcode
         }
-        indexGroupMap[i] = hashcode;  // save the hashcode
     }
 }
+
 
 void organize_points_into_groups(
     // input
@@ -746,6 +790,59 @@ int find_potential_matches(
     return totalMatchCount;
 }
 
+// void match_points(
+//     // inputs
+//     int vectorLength, int nPoints1, int nPoints2,
+//     float* __restrict__ points1, float* __restrict__ points2,
+//     int nPotentialMatches,
+//     int* __restrict__ potentialMatches, int* __restrict__ potentialMatchesIndices,
+//     int* __restrict__ potentialMatchesLengths,
+//     // outputs
+//     int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
+//     int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2)
+// {
+    
+//     #pragma acc parallel loop
+//     for (int i = 0; i < nPoints2; i++) {
+//         bool changed = false;
+//         float bestMatchDist = bestMatchDists[i];
+//         float bestMatchDist2 = bestMatchDist;
+//         int match = -1;
+//         int match2 = -1;
+//         int jStart = potentialMatchesIndices[i];
+//         int jEnd = potentialMatchesIndices[i] + potentialMatchesLengths[i];
+
+//         // Match the points
+//         for (int j = jStart; j < jEnd; j++) {
+//             int idx = potentialMatches[j];
+//             // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
+//             float diff = 0;
+//             // #pragma acc loop vector reduction(+:diff)
+//             for (int k = 0; k < vectorLength; k++) {
+//                 float tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
+//                 diff += tmp * tmp;
+//             }
+//             // check if distance is the lowest distance so far
+//             if (diff < bestMatchDist) {
+//                 // save old value as second best
+//                 bestMatchDist2 = bestMatchDist;
+//                 match2 = match;
+//                 // update best value
+//                 bestMatchDist = diff;
+//                 match = idx;
+//                 changed = true;
+//             }
+//         }
+
+//         if (changed) {
+//             lshMatches[i] = match;
+//             bestMatchDists[i] = bestMatchDist;
+//             lshMatches2[i] = match2;
+//             bestMatchDists2[i] = bestMatchDist2;
+//         }
+//     }
+// }
+
 void match_points(
     // inputs
     int vectorLength, int nPoints1, int nPoints2,
@@ -758,42 +855,55 @@ void match_points(
     int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2)
 {
     
+    #pragma acc data \
+        pcopyin(points1[nPoints1*vectorLength]) \
+        pcopyin(points2[nPoints2*vectorLength]) \
+        pcopyin(potentialMatches[nPotentialMatches])\
+        pcopyin(potentialMatchesIndices[nPoints2]) \
+        pcopyin(potentialMatchesLengths[nPoints2]) \
+        pcopy(lshMatches[nPoints2]) \
+        pcopy(bestMatchDists[nPoints2]) \
+        pcopy(lshMatches2[nPoints2]) \
+        pcopy(bestMatchDists2[nPoints2]) 
+    {
+        #pragma acc parallel loop gang worker num_workers(1) vector_length(32)
+        for (int i = 0; i < nPoints2; i++) {
+            bool changed = false;
+            float bestMatchDist = bestMatchDists[i];
+            float bestMatchDist2 = bestMatchDist;
+            int match = -1;
+            int match2 = -1;
+            int jStart = potentialMatchesIndices[i];
+            int jEnd = potentialMatchesIndices[i] + potentialMatchesLengths[i];
 
-    for (int i = 0; i < nPoints2; i++) {
-        bool changed = false;
-        float bestMatchDist = bestMatchDists[i];
-        float bestMatchDist2 = bestMatchDist;
-        int match = -1;
-        int match2 = -1;
-        int jStart = potentialMatchesIndices[i];
-        int jEnd = potentialMatchesIndices[i] + potentialMatchesLengths[i];
-
-        // Match the points
-        for (int j = jStart; j < jEnd; j++) {
-            int idx = potentialMatches[j];
-            // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
-            float diff = 0;
-            for (int k = 0; k < vectorLength; k++) {
-                float tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
-                diff += tmp * tmp;
+            // Match the points
+            for (int j = jStart; j < jEnd; j++) {
+                int idx = potentialMatches[j];
+                // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
+                float diff = 0;
+                #pragma acc loop vector reduction(+:diff)
+                for (int k = 0; k < vectorLength; k++) {
+                    float tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
+                    diff += tmp * tmp;
+                }
+                // check if distance is the lowest distance so far
+                if (diff < bestMatchDist) {
+                    // save old value as second best
+                    bestMatchDist2 = bestMatchDist;
+                    match2 = match;
+                    // update best value
+                    bestMatchDist = diff;
+                    match = idx;
+                    changed = true;
+                }
             }
-            // check if distance is the lowest distance so far
-            if (diff < bestMatchDist) {
-                // save old value as second best
-                bestMatchDist2 = bestMatchDist;
-                match2 = match;
-                // update best value
-                bestMatchDist = diff;
-                match = idx;
-                changed = true;
-            }
-        }
 
-        if (changed) {
-            lshMatches[i] = match;
-            bestMatchDists[i] = bestMatchDist;
-            lshMatches2[i] = match2;
-            bestMatchDists2[i] = bestMatchDist2;
+            if (changed) {
+                lshMatches[i] = match;
+                bestMatchDists[i] = bestMatchDist;
+                lshMatches2[i] = match2;
+                bestMatchDists2[i] = bestMatchDist2;
+            }
         }
     }
 }
