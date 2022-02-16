@@ -1,0 +1,18 @@
+Constructing lsh tables:
+   - time: 0.655 seconds
+Calculating group mappings for the other point dataset:
+   - time: 0.007 seconds
+Finding potential matches
+   - time: 0.000 seconds
+Matching potential matches
+   - time: 0.005 seconds
+
+Potential matches found: 26700
+Comparisons per query vector: 267.000000
+Average portion of search space searched: 0.026700
+
+Correct ratio: 0.810000
+
+real	0m0,678s
+user	0m0,665s
+sys	0m0,013s

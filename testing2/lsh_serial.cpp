@@ -247,53 +247,6 @@ void match_points(
     int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
     int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2);
 
-int double_int_arr_size(int** arr, int curSize) {
-    int newSize = 2*curSize;
-    int* newArr = (int*) malloc(newSize * sizeof(int));
-    memcpy(newArr, *arr, curSize * sizeof(int));
-    int* oldArr = *arr;
-    *arr = newArr;
-    free(oldArr);
-    return newSize;
-}
-
-
-void find_vector_mean(int nPoints, float* points, float* mean) {
-    long sum[128] = {};
-    for (int i = 0; i < nPoints; i++) {
-        for (int j = 0; j < 128; j++) {
-            sum[j] += (long) 100 * points[i*128 + j];
-        }
-    }
-    
-    for (int i = 0; i < 128; i++) {
-        mean[i] = ((float) sum[i]) / (nPoints * 100);
-        // printf("mean[%d] = %f\n", i, mean[i]);
-    }
-}
-
-void subtract_vector_from_all(int nPoints, float* points, float* mean) {
-    for (int i = 0; i < nPoints; i++) {
-        for (int j = 0; j < 128; j++) {
-            points[i * 128 + j] -= mean[j];
-        }
-    }
-}
-
-void subtract_mean_of_1_from_both(
-    int nPoints1, int nPoints2, float* points1, float* points2)
-{
-    // The case where the table is only used once, could save the mean if one
-    // needs to subtract it from new datasets.
-    float mean[128];
-    find_vector_mean(nPoints1, points1, mean);
-    subtract_vector_from_all(nPoints1, points1, mean);
-    subtract_vector_from_all(nPoints2, points2, mean);
-    // for (int i = 0; i < 128; i++) {
-    //     printf("mean[%d]=%f\n", i, mean[i]);
-    // }
-}
-
 
 int main(int argc, char** argv) {
     srand(0);
@@ -349,7 +302,11 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Error opening %s for reading\n", argv[4]);
         return -1;
     }
-    fread(hyperplanes, 4, numTables * nPlanes * vectorLength, fp);
+    int ret = fread(hyperplanes, 4, numTables * nPlanes * vectorLength, fp);
+    if (ret != numTables * nPlanes * vectorLength) {
+        fprintf(stderr, "Error reading %s\n", argv[4]);
+        return -1;
+    }
     fclose(fp);
 
     //  -- Arrays to organize groups --

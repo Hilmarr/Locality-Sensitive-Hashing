@@ -1,7 +1,11 @@
-CC = g++
-# CFLAGS = -Wall -Wextra -Wpedantic
-# CFLAGS = -O3 -Wall -Wextra -Wpedantic
-CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic -g -pg
+# CC = g++
+# # CFLAGS = -O3 -Wall -Wextra -Wpedantic
+# CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic -g -pg
+
+CC = pgc++
+CFLAGS = -Wall -Wextra -Wpedantic -acc -fast -Minfo=all
+# CFLAGS = -Wall -Wextra -Wpedantic -Minfo=all -g -pg
+
 FILES = lsh_serial
 
 .PHONY: default all clean profile_lsh
@@ -19,8 +23,8 @@ all: $(FILES)
 lsh_serial: lsh_serial.o read_file_funcs.o
 	$(CC) $(CFLAGS) $^ -o $@
 
-# profile_lsh:
-# 	gprof lsh_serial gmon.out > gprof_results.txt
+profile_lsh:
+	gprof lsh_serial gmon.out > gprof_results.txt
 
 run_lsh_serial_siftsmall: lsh_serial
 	./lsh_serial \
