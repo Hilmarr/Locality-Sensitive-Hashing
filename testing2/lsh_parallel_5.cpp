@@ -566,19 +566,16 @@ void fill_hyperplanes(int nPlanes, int vectorLength, float* hyperplanes) {
 //     int* __restrict__ indexGroupMap)
 // {
 //     // - Calculate hash values, keep track of sizes of each group -
-//     #pragma acc parallel loop 
 //     for (int i = 0; i < nPoints; i++) {
 
 //         float* point = &points[i * vectorLength];
 //         int hashcode = 0;  //  hashcode will be the group index
 
 //         // calculate hash value of the i'th point, store resut in indexGroupMap
-//         // #pragma acc loop
 //         for (int j = 0; j < nPlanes; j++) {
 //             float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
 //             // calculate point * hplane
 //             float vecMul = 0;
-//             // #pragma acc loop
 //             for (int k = 0; k < vectorLength; k++) {
 //                 vecMul += point[k] * hplane[k];
 //             }
@@ -881,7 +878,7 @@ void match_points(
                 int idx = potentialMatches[j];
                 // diff = sum((points2[i][:] - points1[idx][:]) .^ 2);
                 float diff = 0;
-                #pragma acc loop vector reduction(+:diff)
+                #pragma acc loop reduction(+:diff) vector
                 for (int k = 0; k < vectorLength; k++) {
                     float tmp = points2[i * vectorLength + k] - points1[idx * vectorLength + k];
                     diff += tmp * tmp;
