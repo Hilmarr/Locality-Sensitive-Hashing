@@ -6,11 +6,11 @@ CC = pgc++
 CFLAGS = -Wall -Wextra -Wpedantic -acc -fast -Minfo=all
 # CFLAGS = -Wall -Wextra -Wpedantic -Minfo=all -g -pg
 
-FILES = lsh_serial lsh_parallel_3 lsh_parallel_4 lsh_parallel_5
+FILES = lsh_serial lsh_parallel_3 lsh_parallel_4 lsh_parallel_5 lsh_parallel_6
 
 .PHONY: default all clean profile_lsh
 
-default: lsh_parallel_5
+default: lsh_parallel_6
 
 all: $(FILES)
 
@@ -30,6 +30,9 @@ lsh_parallel_4: lsh_parallel_4.o read_file_funcs.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 lsh_parallel_5: lsh_parallel_5.o read_file_funcs.o
+	$(CC) $(CFLAGS) $^ -o $@
+
+lsh_parallel_6: lsh_parallel_6.o read_file_funcs.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 
@@ -103,6 +106,21 @@ run_lsh_parallel_5_sift: lsh_parallel_5
 
 profile_lsh_parallel_5_sift: lsh_parallel_5
 	nvprof --unified-memory-profiling off ./lsh_parallel_5 \
+	../test_data/sift/sift_base.fvecs \
+	../test_data/sift/sift_query.fvecs \
+	../test_data/sift/sift_groundtruth.ivecs \
+	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+
+
+run_lsh_parallel_6_sift: lsh_parallel_6
+	./lsh_parallel_6 \
+	../test_data/sift/sift_base.fvecs \
+	../test_data/sift/sift_query.fvecs \
+	../test_data/sift/sift_groundtruth.ivecs \
+	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+
+profile_lsh_parallel_6_sift: lsh_parallel_6
+	nvprof --unified-memory-profiling off ./lsh_parallel_6 \
 	../test_data/sift/sift_base.fvecs \
 	../test_data/sift/sift_query.fvecs \
 	../test_data/sift/sift_groundtruth.ivecs \
