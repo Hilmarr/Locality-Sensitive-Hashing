@@ -345,6 +345,25 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+    // calculate indices into lsh tables for the original set
+    calculate_indexGroupMap(vectorLength, numTables, nPoints1, points1,
+                            nPlanes, hyperplanes, indexGroupMapTableLen, indexGroupMap);
+
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    printf("Calculating hash values for base vectors:\n");
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
+
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
+#ifdef TIME_LSH
+    gettimeofday(&time, NULL);
+    startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+#endif
+
     // -- Construct and store LSH tables --
     // future change: indexGroupMapTableLen can at this point just be nPoints1 * vectorLength
 
@@ -380,7 +399,7 @@ int main(int argc, char** argv) {
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-    printf("Calculating group mappings for the other point dataset:\n");
+    printf("Calculating hash values for the query points:\n");
     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 
     gettimeofday(&time, NULL);
@@ -707,10 +726,6 @@ void construct_lsh_tables(  // input
     const int groupMapTableLen = nGroups;
     const int groupMapLen = numTables * groupMapTableLen;
     const int groupArrayTableLen = nPoints;
-
-    // calculate indices into lsh tables for the original set
-    calculate_indexGroupMap(vectorLength, numTables, nPoints, points,
-                           nPlanes, hyperplanes, indexGroupMapTableLen, indexGroupMap);
 
     // temporary values when creating groupIndexMap
     int* groupIndexMapTails = (int*)malloc(groupMapLen * sizeof(int));
