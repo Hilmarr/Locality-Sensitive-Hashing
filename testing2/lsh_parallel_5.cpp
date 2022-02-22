@@ -399,7 +399,7 @@ int main(int argc, char** argv) {
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-    printf("Calculating hash values for the query points:\n");
+    printf("Calculating hash values for the query vectors:\n");
     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 
     gettimeofday(&time, NULL);

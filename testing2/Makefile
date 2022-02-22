@@ -10,7 +10,7 @@ FILES = lsh_serial lsh_parallel_3 lsh_parallel_4 lsh_parallel_5 lsh_parallel_6
 
 .PHONY: default all clean profile_lsh
 
-default: lsh_serial
+default: lsh_parallel_6
 
 all: $(FILES)
 

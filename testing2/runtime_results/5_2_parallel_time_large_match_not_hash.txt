@@ -1,0 +1,26 @@
+time ./lsh_parallel_5 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+Calculating hash values for base vectors:
+   - time: 6.516 seconds
+Constructing lsh tables:
+   - time: 0.345 seconds
+Calculating hash values for the query vectors:
+   - time: 0.063 seconds
+Finding potential matches
+   - time: 1.481 seconds
+Matching potential matches
+   - time: 5.342 seconds
+
+Potential matches found: 239775018
+Comparisons per query vector: 23977.501800
+Average portion of search space searched: 0.023978
+
+Correct ratio: 0.830300
+
+real	0m14,198s
+user	0m13,496s
+sys	0m0,684s
+
