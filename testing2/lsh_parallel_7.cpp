@@ -621,7 +621,7 @@ void calculate_hash_values(
       present(hyperplanes[nPlanes*vectorLength]) \
       present(indexGroupMap[nPoints])
     {
-        #pragma acc parallel loop gang worker vector_length(8)
+        #pragma acc parallel loop gang worker num_workers(128) vector_length(8)
         for (int i = 0; i < nPoints; i++) {
 
             float* point = &points[i * vectorLength];

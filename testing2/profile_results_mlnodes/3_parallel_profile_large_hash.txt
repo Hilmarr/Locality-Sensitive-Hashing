@@ -1,0 +1,64 @@
+nvprof --unified-memory-profiling off ./lsh_parallel_3 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+==732334== NVPROF is profiling process 732334, command: ./lsh_parallel_3 ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+Calculating hash values for base vectors:
+   - time: 5.575 seconds
+Constructing lsh tables:
+   - time: 0.364 seconds
+Calculating hash values for the query vectors:
+   - time: 0.069 seconds
+Finding potential matches
+   - time: 2.520 seconds
+Matching potential matches
+   - time: 26.570 seconds
+
+Potential matches found: 239775073
+Comparisons per query vector: 23977.507300
+Average portion of search space searched: 0.023978
+
+Correct ratio: 0.830300
+==732334== Profiling application: ./lsh_parallel_3 ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+==732334== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:   53.28%  1.35049s      1088  1.2413ms  1.8560us  1.4165ms  [CUDA memcpy HtoD]
+                   46.33%  1.17429s        64  18.348ms  361.11us  50.567ms  calculate_hash_values_625_gpu(int, int, float*, int, float*, int*)
+                    0.40%  10.091ms        64  157.67us  3.8080us  455.38us  [CUDA memcpy DtoH]
+      API calls:   80.59%  1.23524s       192  6.4335ms  1.2040us  50.565ms  cuStreamSynchronize
+                   15.09%  231.31ms         1  231.31ms  231.31ms  231.31ms  cuDevicePrimaryCtxRetain
+                    2.01%  30.774ms         1  30.774ms  30.774ms  30.774ms  cuMemHostAlloc
+                    1.24%  19.073ms      1088  17.530us  4.3710us  485.00us  cuMemcpyHtoDAsync
+                    0.29%  4.4284ms      1074  4.1230us  1.7400us  36.962us  cuEventRecord
+                    0.27%  4.1680ms      1072  3.8880us     544ns  152.58us  cuEventSynchronize
+                    0.17%  2.6177ms         6  436.28us  21.573us  987.94us  cuMemAlloc
+                    0.13%  1.9875ms        64  31.054us  10.961us  184.06us  cuLaunchKernel
+                    0.09%  1.4027ms        64  21.917us  5.6820us  370.20us  cuMemcpyDtoHAsync
+                    0.08%  1.1611ms         1  1.1611ms  1.1611ms  1.1611ms  cuMemAllocHost
+                    0.03%  521.19us        98  5.3180us     449ns  115.77us  cuPointerGetAttributes
+                    0.00%  68.594us         1  68.594us  68.594us  68.594us  cuModuleLoadDataEx
+                    0.00%  14.094us         4  3.5230us     536ns  5.6350us  cuEventCreate
+                    0.00%  14.037us         4  3.5090us  1.0100us  8.6070us  cuDeviceGetPCIBusId
+                    0.00%  12.888us         1  12.888us  12.888us  12.888us  cuStreamCreate
+                    0.00%  5.7970us        20     289ns     162ns     983ns  cuDeviceGetAttribute
+                    0.00%  1.9200us         3     640ns     317ns     879ns  cuCtxSetCurrent
+                    0.00%  1.8010us         8     225ns     136ns     579ns  cuDeviceGet
+                    0.00%  1.7120us         1  1.7120us  1.7120us  1.7120us  cuModuleGetFunction
+                    0.00%  1.0420us         2     521ns     198ns     844ns  cuDeviceGetCount
+                    0.00%     739ns         4     184ns     147ns     288ns  cuDeviceComputeCapability
+                    0.00%     495ns         1     495ns     495ns     495ns  cuCtxGetCurrent
+                    0.00%     214ns         1     214ns     214ns     214ns  cuDriverGetVersion
+ OpenACC (excl):   74.23%  3.83323s        64  59.894ms  894.33us  175.09ms  acc_enter_data@lsh_parallel_3.cpp:625
+                   23.75%  1.22618s       128  9.5795ms  291.24us  50.566ms  acc_wait@lsh_parallel_3.cpp:625
+                    1.37%  70.523ms        64  1.1019ms  31.681us  4.6519ms  acc_wait@lsh_parallel_3.cpp:649
+                    0.53%  27.207ms      1088  25.006us  5.4650us  732.37us  acc_enqueue_upload@lsh_parallel_3.cpp:625
+                    0.05%  2.3982ms        64  37.471us  13.645us  222.06us  acc_enqueue_launch@lsh_parallel_3.cpp:625 (_Z29calculate_hash_values_625_gpuiiPfiS_Pi)
+                    0.04%  2.1825ms        64  34.101us  10.702us  443.75us  acc_enqueue_download@lsh_parallel_3.cpp:649
+                    0.03%  1.4980ms        64  23.405us  11.283us  60.774us  acc_exit_data@lsh_parallel_3.cpp:625
+                    0.01%  469.24us        64  7.3310us  2.6020us  26.373us  acc_compute_construct@lsh_parallel_3.cpp:625
+                    0.00%  94.897us         1  94.897us  94.897us  94.897us  acc_device_init@lsh_parallel_3.cpp:625
+                    0.00%       0ns         5       0ns       0ns       0ns  acc_alloc@lsh_parallel_3.cpp:625
+                    0.00%       0ns       192       0ns       0ns       0ns  acc_delete@lsh_parallel_3.cpp:649
+                    0.00%       0ns       192       0ns       0ns       0ns  acc_create@lsh_parallel_3.cpp:625
+

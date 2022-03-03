@@ -1,16 +1,16 @@
 # CC = g++
-# # CFLAGS = -O3 -Wall -Wextra -Wpedantic
-# CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic -g -pg
+# CFLAGS = -O3 -Wall -Wextra -Wpedantic
+# # CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic -g -pg
 
 CC = pgc++
-CFLAGS = -Wall -Wextra -Wpedantic -acc -fast -Minfo=all
-# CFLAGS = -Wall -Wextra -Wpedantic -Minfo=all -g -pg
+CFLAGS = -Wall -Wextra -acc -fast -Minfo=all
+# CFLAGS = -Wall -Wextra -Minfo=all -g -pg
 
 FILES = lsh_serial lsh_parallel_3 lsh_parallel_4 lsh_parallel_5 lsh_parallel_6 lsh_parallel_7
 
 .PHONY: default all clean profile_lsh
 
-default: lsh_parallel_7
+default: lsh_parallel_6
 
 all: $(FILES)
 
