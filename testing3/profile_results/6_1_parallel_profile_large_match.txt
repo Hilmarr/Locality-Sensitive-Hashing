@@ -1,1 +1,120 @@
+nvprof --unified-memory-profiling off ./lsh_parallel_6 ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+==993344== NVPROF is profiling process 993344, command: ./lsh_parallel_6 ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+Calculating hash values for base vectors:
+   - time: 1.051 seconds
+Constructing lsh tables:
+   - time: 0.214 seconds
+Calculating hash values for query vectors:
+   - time: 0.009 seconds
+Finding potential matches
+   - time: 1.534 seconds
+Matching potential matches
+   - time: 0.570 seconds
+
+Potential matches found: 239775073
+Comparisons per query vector: 23977.507300
+Average portion of search space searched: 0.023978
+
+Correct ratio: 0.830300
+==993344== Profiling application: ./lsh_parallel_6 ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+==993344== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:   46.49%  428.59ms        64  6.6967ms  158.82us  17.221ms  calculate_hash_values_632_gpu(int, int, float*, int, float*, int*)
+                   34.73%  320.20ms         1  320.20ms  320.20ms  320.20ms  match_points_895_gpu(int, int, int, float*, float*, int, int*, int*, int*, int*, float*, int*, float*)
+                   17.71%  163.23ms       130  1.2556ms  5.0570us  1.3884ms  [CUDA memcpy HtoD]
+                    1.07%  9.8685ms        13  759.11us  3.7760us  1.2845ms  [CUDA memcpy DtoH]
+      API calls:   73.95%  751.39ms        71  10.583ms  3.0140us  320.21ms  cuStreamSynchronize
+                   21.36%  217.03ms         1  217.03ms  217.03ms  217.03ms  cuDevicePrimaryCtxRetain
+                    2.89%  29.387ms         1  29.387ms  29.387ms  29.387ms  cuMemHostAlloc
+                    0.88%  8.9439ms       139  64.344us     546ns  1.2857ms  cuEventSynchronize
+                    0.54%  5.4487ms        13  419.13us  2.3610us  2.3161ms  cuMemAlloc
+                    0.14%  1.4234ms       130  10.948us  3.4820us  74.271us  cuMemcpyHtoDAsync
+                    0.11%  1.1577ms         1  1.1577ms  1.1577ms  1.1577ms  cuMemAllocHost
+                    0.04%  437.39us       141  3.1020us  1.5510us  14.973us  cuEventRecord
+                    0.04%  401.02us        65  6.1690us  3.6820us  49.962us  cuLaunchKernel
+                    0.02%  179.10us        13  13.777us  3.1560us  26.564us  cuMemcpyDtoHAsync
+                    0.01%  100.90us         1  100.90us  100.90us  100.90us  cuModuleLoadDataEx
+                    0.01%  95.192us        12  7.9320us     352ns  52.951us  cuPointerGetAttributes
+                    0.00%  33.851us         7  4.8350us     512ns  19.271us  cuEventCreate
+                    0.00%  17.223us         1  17.223us  17.223us  17.223us  cuStreamCreate
+                    0.00%  12.243us         4  3.0600us     867ns  8.7110us  cuDeviceGetPCIBusId
+                    0.00%  4.2140us        20     210ns     142ns     598ns  cuDeviceGetAttribute
+                    0.00%  2.0600us         3     686ns     283ns     889ns  cuCtxSetCurrent
+                    0.00%  1.9880us         2     994ns     420ns  1.5680us  cuModuleGetFunction
+                    0.00%  1.3870us         8     173ns     130ns     425ns  cuDeviceGet
+                    0.00%     693ns         4     173ns     136ns     257ns  cuDeviceComputeCapability
+                    0.00%     651ns         2     325ns     142ns     509ns  cuDeviceGetCount
+                    0.00%     400ns         1     400ns     400ns     400ns  cuCtxGetCurrent
+                    0.00%     229ns         1     229ns     229ns     229ns  cuDriverGetVersion
+ OpenACC (excl):   36.73%  428.69ms        64  6.6982ms  156.67us  17.223ms  acc_wait@lsh_parallel_6.cpp:632
+                   27.53%  321.39ms         2  160.70ms  1.1755ms  320.22ms  acc_wait@lsh_parallel_6.cpp:895
+                   21.13%  246.66ms         1  246.66ms  246.66ms  246.66ms  acc_enter_data@lsh_parallel_6.cpp:895
+                   10.17%  118.73ms         2  59.365ms  1.8650ms  116.87ms  acc_enter_data@lsh_parallel_6.cpp:712
+                    3.54%  41.275ms         2  20.638ms  18.544us  41.257ms  acc_exit_data@lsh_parallel_6.cpp:712
+                    0.60%  7.0492ms         2  3.5246ms  839.16us  6.2100ms  acc_wait@lsh_parallel_6.cpp:721
+                    0.12%  1.3616ms        96  14.183us  4.5190us  90.620us  acc_enqueue_upload@lsh_parallel_6.cpp:895
+                    0.06%  664.09us        34  19.532us  7.5980us  86.085us  acc_enqueue_upload@lsh_parallel_6.cpp:712
+                    0.04%  472.44us        64  7.3810us  4.7820us  60.881us  acc_enqueue_launch@lsh_parallel_6.cpp:632 (_Z29calculate_hash_values_632_gpuiiPfiS_Pi)
+                    0.02%  227.90us         9  25.322us  19.405us  43.499us  acc_enqueue_download@lsh_parallel_6.cpp:721
+                    0.01%  143.49us        64  2.2420us  1.8990us  7.8630us  acc_exit_data@lsh_parallel_6.cpp:632
+                    0.01%  136.82us        64  2.1370us  1.7200us  10.862us  acc_compute_construct@lsh_parallel_6.cpp:632
+                    0.01%  135.33us        64  2.1140us  1.8710us  4.5220us  acc_enter_data@lsh_parallel_6.cpp:632
+                    0.01%  126.82us         1  126.82us  126.82us  126.82us  acc_device_init@lsh_parallel_6.cpp:712
+                    0.01%  82.555us         4  20.638us  6.6870us  40.296us  acc_enqueue_download@lsh_parallel_6.cpp:935
+                    0.00%  44.068us         1  44.068us  44.068us  44.068us  acc_enqueue_launch@lsh_parallel_6.cpp:895 (_Z20match_points_895_gpuiiiPfS_iPiS0_S0_S0_S_S0_S_)
+                    0.00%  31.607us         1  31.607us  31.607us  31.607us  acc_exit_data@lsh_parallel_6.cpp:895
+                    0.00%  31.343us         1  31.343us  31.343us  31.343us  acc_wait@lsh_parallel_6.cpp:935
+                    0.00%  26.559us         2  13.279us  6.2770us  20.282us  acc_wait@lsh_parallel_6.cpp:712
+                    0.00%  6.0270us         1  6.0270us  6.0270us  6.0270us  acc_compute_construct@lsh_parallel_6.cpp:895
+                    0.00%       0ns         9       0ns       0ns       0ns  acc_delete@lsh_parallel_6.cpp:935
+                    0.00%       0ns         9       0ns       0ns       0ns  acc_create@lsh_parallel_6.cpp:895
+                    0.00%       0ns         6       0ns       0ns       0ns  acc_create@lsh_parallel_6.cpp:712
+                    0.00%       0ns         6       0ns       0ns       0ns  acc_delete@lsh_parallel_6.cpp:721
+                    0.00%       0ns         7       0ns       0ns       0ns  acc_alloc@lsh_parallel_6.cpp:895
+                    0.00%       0ns         5       0ns       0ns       0ns  acc_alloc@lsh_parallel_6.cpp:712
+
+==993344== NVTX result:
+==993344==   Thread "<unnamed>" (id = 2445393152)
+==993344==     Domain "<unnamed>"
+==993344==       Range "Calculating hash values for base vectors"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  934.81ms         1  934.81ms  934.81ms  934.81ms  Calculating hash values for base vectors
+ GPU activities:   89.09%  422.75ms        32  13.211ms  11.964ms  17.221ms  calculate_hash_values_632_gpu(int, int, float*, int, float*, int*)
+                    8.86%  42.023ms        32  1.3132ms  23.490us  1.3884ms  [CUDA memcpy HtoD]
+                    2.06%  9.7546ms         8  1.2193ms  816.72us  1.2845ms  [CUDA memcpy DtoH]
+      API calls:   55.45%  380.47us        32  11.889us  5.9890us  45.289us  cuMemcpyHtoDAsync
+                   26.44%  181.43us        32  5.6690us  4.1670us  29.152us  cuLaunchKernel
+                   18.12%  124.31us         8  15.538us  12.936us  23.818us  cuMemcpyDtoHAsync
+
+==993344==       Range "Calculating hash values for query vectors"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  9.2421ms         1  9.2421ms  9.2421ms  9.2421ms  Calculating hash values for query vectors
+ GPU activities:   91.54%  5.8421ms        32  182.57us  158.82us  210.32us  calculate_hash_values_632_gpu(int, int, float*, int, float*, int*)
+                    6.92%  441.94us         2  220.97us  23.074us  418.87us  [CUDA memcpy HtoD]
+                    1.54%  98.021us         1  98.021us  98.021us  98.021us  [CUDA memcpy DtoH]
+      API calls:   64.95%  182.20us        32  5.6930us  3.6820us  49.962us  cuLaunchKernel
+                   28.93%  81.160us         2  40.580us  6.8890us  74.271us  cuMemcpyHtoDAsync
+                    6.11%  17.153us         1  17.153us  17.153us  17.153us  cuMemcpyDtoHAsync
+
+==993344==       Range "Constructing lsh tables"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  214.40ms         1  214.40ms  214.40ms  214.40ms  Constructing lsh tables
+No kernels were profiled in this range.
+No API activities were profiled in this range.
+
+==993344==       Range "Finding potential matches"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  1.53363s         1  1.53363s  1.53363s  1.53363s  Finding potential matches
+No kernels were profiled in this range.
+No API activities were profiled in this range.
+
+==993344==       Range "Matching potential matches"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  569.74ms         1  569.74ms  569.74ms  569.74ms  Matching potential matches
+ GPU activities:   72.61%  320.20ms         1  320.20ms  320.20ms  320.20ms  match_points_895_gpu(int, int, int, float*, float*, int, int*, int*, int*, int*, float*, int*, float*)
+                   27.38%  120.76ms        96  1.2579ms  5.0570us  1.3850ms  [CUDA memcpy HtoD]
+                    0.00%  15.840us         4  3.9600us  3.7760us  4.3840us  [CUDA memcpy DtoH]
+      API calls:   92.76%  961.73us        96  10.017us  3.4820us  73.016us  cuMemcpyHtoDAsync
+                    3.63%  37.643us         4  9.4100us  3.1560us  26.564us  cuMemcpyDtoHAsync
+                    3.61%  37.399us         1  37.399us  37.399us  37.399us  cuLaunchKernel
 

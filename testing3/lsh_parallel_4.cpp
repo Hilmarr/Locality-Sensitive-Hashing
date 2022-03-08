@@ -1,8 +1,10 @@
+#include <nvToolsExt.h>
+
 #include <cmath>
+#include <cstring>
 #include <iostream>
 #include <iterator>
 #include <numeric>
-#include <cstring>
 
 #define TIME_LSH
 
@@ -247,11 +249,10 @@ void match_points(
     int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
     int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2);
 
-
 int main(int argc, char** argv) {
     srand(0);
-    int nPoints1 = 0;     // number of points in the first dataset
-    int nPoints2 = 0;       // number of points in the second dataset
+    int nPoints1 = 0;  // number of points in the first dataset
+    int nPoints2 = 0;  // number of points in the second dataset
     const int vectorLength = 128;
     const int numTables = 32;
 
@@ -281,8 +282,8 @@ int main(int argc, char** argv) {
 
     // printf("nPoints1=%d,  nPoints2=%d\n")
 
-    float* points1 = (float*) tmp1;
-    float* points2 = (float*) tmp2;
+    float* points1 = (float*)tmp1;
+    float* points2 = (float*)tmp2;
 
     // -- Generate some random points and similar random points to match with --
 
@@ -336,7 +337,6 @@ int main(int argc, char** argv) {
     const int groupArrayLen = numTables * groupArrayTableLen;
     int* groupArray = (int*)malloc(groupArrayLen * sizeof(int));
 
-
 #ifdef TIME_LSH
     struct timeval time;
     long startTime;
@@ -345,9 +345,11 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+    nvtxRangePush("Calculating hash values for base vectors");
     // calculate indices into lsh tables for the original set
     calculate_indexGroupMap(vectorLength, numTables, nPoints1, points1,
                             nPlanes, hyperplanes, indexGroupMapTableLen, indexGroupMap);
+    nvtxRangePop();
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -365,16 +367,16 @@ int main(int argc, char** argv) {
 #endif
 
     // -- Construct and store LSH tables --
-    // future change: indexGroupMapTableLen can at this point just be nPoints1 * vectorLength
-
-    construct_lsh_tables(// input
-                         vectorLength, numTables, nGroups,
-                         nPoints1, points1,
-                         nPlanes, hyperplanes,
-                         indexGroupMap, indexGroupMapTableLen,
-                         // output
-                         groupArray,
-                         groupSizeMap, groupIndexMap);
+    nvtxRangePush("Constructing lsh tables");
+    construct_lsh_tables(  // input
+        vectorLength, numTables, nGroups,
+        nPoints1, points1,
+        nPlanes, hyperplanes,
+        indexGroupMap, indexGroupMapTableLen,
+        // output
+        groupArray,
+        groupSizeMap, groupIndexMap);
+    nvtxRangePop();
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -391,21 +393,23 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+    nvtxRangePush("Calculating hash values for query vectors");
     // calculate indices into lsh tables for the matching set
-    // future change: indexGroupMapTableLen can at this point just be nPoints2 * vectorLength
     calculate_indexGroupMap(vectorLength, numTables, nPoints2, points2,
                             nPlanes, hyperplanes, indexGroupMapTableLen2, indexGroupMap2);
+    nvtxRangePop();
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
-    printf("Calculating hash values for the query vectors:\n");
+    printf("Calculating hash values for query vectors:\n");
     printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 
     gettimeofday(&time, NULL);
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+    nvtxRangePush("Finding potential matches");
     // Array allocation
     // int potentialMatchesMaxLen = nPoints2 * 128;
     int potentialMatchesMaxLen = 1e9;
@@ -413,8 +417,8 @@ int main(int argc, char** argv) {
     int* potentialMatchesIndices = (int*)malloc(nPoints2 * sizeof(int));
     int* potentialMatchesLengths = (int*)malloc(nPoints2 * sizeof(int));
 
-    int nPotentialMatches = find_potential_matches( 
-        //inputs
+    int nPotentialMatches = find_potential_matches(
+        // inputs
         numTables, nPoints1, nPoints2,
         indexGroupMap2, indexGroupMapTableLen2,
         groupArray, groupSizeMap, groupIndexMap,
@@ -422,17 +426,19 @@ int main(int argc, char** argv) {
         // outputs
         &potentialMatches, potentialMatchesIndices,
         potentialMatchesLengths);
-    
+    nvtxRangePop();
+
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     endTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
     printf("Finding potential matches\n");
-    printf("   - time: %.3f seconds\n", ((double)endTime - startTime)/1000);
+    printf("   - time: %.3f seconds\n", ((double)endTime - startTime) / 1000);
 
     gettimeofday(&time, NULL);
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+    nvtxRangePush("Matching potential matches");
     // Array allocation and initialization
     // holds the actual matches
     int* lshMatches = (int*)malloc(nPoints2 * sizeof(int));
@@ -456,6 +462,7 @@ int main(int argc, char** argv) {
                  nPotentialMatches, potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
                  lshMatches, bestMatchDists,
                  lshMatches2, bestMatchDists2);
+    nvtxRangePop();
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -466,12 +473,12 @@ int main(int argc, char** argv) {
 
     int* tmpGT;
     int groundTruthLen = read_vector_file2(argv[3], &tmpGT) / 100;
-    int* groundTruth = (int*) malloc(groundTruthLen * sizeof(int));
+    int* groundTruth = (int*)malloc(groundTruthLen * sizeof(int));
     for (int i = 0; i < groundTruthLen; i++) {
-        groundTruth[i] = tmpGT[100*i];
+        groundTruth[i] = tmpGT[100 * i];
     }
     free(tmpGT);
-    
+
     // printf("Base points:               %d\n", nPoints1);
     // printf("Query points:              %d\n", nPoints2);
     // printf("Ground truth table length: %d\n", groundTruthLen);
@@ -502,7 +509,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < nPoints2; i++) {
         correct += lshMatches[i] == groundTruth[i];
     }
-    double correctRatio = ((double) correct) / nPoints2;
+    double correctRatio = ((double)correct) / nPoints2;
     printf("Correct ratio: %f\n", correctRatio);
 
     free(points1);

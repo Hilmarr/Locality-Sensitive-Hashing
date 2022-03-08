@@ -55,6 +55,14 @@ run_lsh_serial_sift: lsh_serial
 	../test_data/sift/sift_groundtruth.ivecs \
 	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
 
+profile_lsh_serial_sift_nvprof: lsh_serial
+	nvprof --unified-memory-profiling off ./lsh_serial \
+	../test_data/sift/sift_base.fvecs \
+	../test_data/sift/sift_query.fvecs \
+	../test_data/sift/sift_groundtruth.ivecs \
+	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+
+
 run_lsh_parallel_3_siftsmall: lsh_parallel_3
 	./lsh_parallel_3 \
 	../test_data/siftsmall/siftsmall_base.fvecs \
@@ -123,36 +131,6 @@ run_lsh_parallel_6_sift: lsh_parallel_6
 
 profile_lsh_parallel_6_sift: lsh_parallel_6
 	nvprof --unified-memory-profiling off ./lsh_parallel_6 \
-	../test_data/sift/sift_base.fvecs \
-	../test_data/sift/sift_query.fvecs \
-	../test_data/sift/sift_groundtruth.ivecs \
-	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
-
-# profile_lsh_parallel_6_sift_ncu: lsh_parallel_6
-# 	sudo /opt/nvidia/hpc_sdk/Linux_x86_64/21.9/compilers/bin/ncu -o profile \
-# 	./lsh_parallel_6 \
-# 	../test_data/sift/sift_base.fvecs \
-# 	../test_data/sift/sift_query.fvecs \
-# 	../test_data/sift/sift_groundtruth.ivecs \
-# 	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
-
-# profile_lsh_parallel_6_sift_nsys: lsh_parallel_6
-# 	sudo /opt/nvidia/hpc_sdk/Linux_x86_64/21.9/compilers/bin/nsys \
-# 	./lsh_parallel_6 \
-# 	../test_data/sift/sift_base.fvecs \
-# 	../test_data/sift/sift_query.fvecs \
-# 	../test_data/sift/sift_groundtruth.ivecs \
-# 	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
-
-run_lsh_parallel_7_sift: lsh_parallel_7
-	./lsh_parallel_7 \
-	../test_data/sift/sift_base.fvecs \
-	../test_data/sift/sift_query.fvecs \
-	../test_data/sift/sift_groundtruth.ivecs \
-	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
-
-profile_lsh_parallel_7_sift: lsh_parallel_7
-	nvprof --unified-memory-profiling off ./lsh_parallel_7 \
 	../test_data/sift/sift_base.fvecs \
 	../test_data/sift/sift_query.fvecs \
 	../test_data/sift/sift_groundtruth.ivecs \

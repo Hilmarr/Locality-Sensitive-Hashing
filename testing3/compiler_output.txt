@@ -1,0 +1,109 @@
+make
+pgc++ -Wall -Wextra -acc -fast -Minfo=all -lnvToolsExt -c lsh_parallel_6.cpp -o lsh_parallel_6.o
+"read_file_funcs.h", line 11: warning: last line of file ends without a newline
+  #endif /* READ_VECTOR_FILE_FUNCS_H */
+                                       ^
+
+main:
+    373, construct_lsh_tables(int, int, int, int, float *, int, float *, int *, int, int *, int *, int *) inlined, size=44 (inline) file lsh_parallel_6.cpp (734)
+         742, Loop not vectorized/parallelized: contains call
+         750, organize_points_into_groups(int, int, int *, int *, int *, int *, int *) inlined, size=20 (inline) file lsh_parallel_6.cpp (670)
+         750, Loop not fused: different loop trip count
+              Loop not vectorized: data dependency
+              Loop unrolled 4 times
+              Loop unrolled 2 times
+    422, find_potential_matches(int, int, int, int *, int, int *, int *, int *, int, int, int **, int *, int *) inlined, size=33 (inline) file lsh_parallel_6.cpp (769)
+         792, Loop not vectorized/parallelized: contains call
+    450, Memory set idiom, loop replaced by call to __c_mset4
+    459, Memory set idiom, loop replaced by call to __c_mset4
+    479, Loop not fused: function call before adjacent loop
+         Loop not vectorized: data dependency
+         Loop unrolled 4 times
+    511, Loop not fused: function call before adjacent loop
+         Loop not vectorized: may not be beneficial
+         Loop unrolled 2 times
+fill_point_arrays(int, int, int, float, float *, float *):
+    544, Loop not vectorized/parallelized: contains call
+    546, rand_minus1_to_1() inlined, size=2 (inline) file lsh_parallel_6.cpp (20)
+    549, rand_minus1_to_1() inlined, size=2 (inline) file lsh_parallel_6.cpp (20)
+    552, FMA (fused multiply-add) instruction(s) generated
+    553, FMA (fused multiply-add) instruction(s) generated
+    560, Generated vector simd code for the loop
+fill_hyperplanes(int, int, float *):
+    571, Loop not vectorized/parallelized: contains call
+    573, rand_minus1_to_1() inlined, size=2 (inline) file lsh_parallel_6.cpp (20)
+    575, FMA (fused multiply-add) instruction(s) generated
+    582, Generated vector simd code for the loop
+calculate_hash_values(int, int, float *, int, float *, int *):
+    632, Generating present(indexGroupMap[:nPoints],points[:vectorLength*nPoints],hyperplanes[:vectorLength*nPlanes])
+         Generating Tesla code
+        634, #pragma acc loop gang, worker(128) /* blockIdx.x threadIdx.y */
+        637, Vector barrier inserted due to potential dependence into a vector loop
+        641, #pragma acc loop vector(8) /* threadIdx.x */
+             Generating reduction(|:hashcode)
+        646, #pragma acc loop seq
+        652, Vector barrier inserted for vector loop reduction
+             Vector barrier inserted due to potential dependence out of a vector loop
+    634, Loop not fused: no successor loop
+         FMA (fused multiply-add) instruction(s) generated
+    641, Loop is parallelizable
+    646, Generated vector simd code for the loop containing reductions
+         FMA (fused multiply-add) instruction(s) generated
+organize_points_into_groups(int, int, int *, int *, int *, int *, int *):
+    673, Loop not fused: different loop trip count
+         Loop not vectorized: data dependency
+         Loop unrolled 2 times
+    682, Loop not fused: different loop trip count
+         Loop unrolled 4 times
+    689, Loop not vectorized: data dependency
+calculate_indexGroupMap(int, int, int, float *, int, float *, int, int *):
+    712, Generating copyout(indexGroupMap[:nPoints*numTables]) [if not already present]
+         Generating copyin(points[:vectorLength*nPoints],hyperplanes[:vectorLength*(nPlanes*numTables)]) [if not already present]
+    714, Loop not vectorized/parallelized: contains call
+construct_lsh_tables(int, int, int, int, float *, int, float *, int *, int, int *, int *, int *):
+    742, Loop not vectorized/parallelized: contains call
+    750, organize_points_into_groups(int, int, int *, int *, int *, int *, int *) inlined, size=20 (inline) file lsh_parallel_6.cpp (670)
+         673, Loop not fused: different loop trip count
+              Loop not vectorized: data dependency
+              Loop unrolled 2 times
+         682, Loop not fused: different loop trip count
+              Loop unrolled 4 times
+         689, Loop not vectorized: data dependency
+find_potential_matches(int, int, int, int *, int, int *, int *, int *, int, int, int **, int *, int *):
+    792, Loop not vectorized/parallelized: contains call
+match_points(int, int, int, float *, float *, int, int *, int *, int *, int *, float *, int *, float *):
+    895, Generating copy(lshMatches[:nPoints2]) [if not already present]
+         Generating copyin(points1[:vectorLength*nPoints1],potentialMatches[:nPotentialMatches],potentialMatchesLengths[:nPoints2],points2[:vectorLength*nPoints2],potentialMatchesIndices[:nPoints2]) [if not already present]
+         Generating copy(lshMatches2[:nPoints2],bestMatchDists2[:nPoints2],bestMatchDists[:nPoints2]) [if not already present]
+         Generating Tesla code
+        897, #pragma acc loop gang /* blockIdx.x */
+        907, #pragma acc loop seq
+        912, #pragma acc loop vector(32) /* threadIdx.x */
+             Generating reduction(+:diff)
+    897, Loop not fused: no successor loop
+         FMA (fused multiply-add) instruction(s) generated
+    907, Scalar last value needed after loop for bestMatchDist2 at line 932
+         Scalar last value needed after loop for match2 at line 931
+         Loop carried scalar dependence for bestMatchDist at line 917,919
+         Scalar last value needed after loop for bestMatchDist at line 930
+         Loop carried scalar dependence for match at line 920
+         Scalar last value needed after loop for match at line 929
+         Scalar last value needed after loop for changed at line 928
+         Loop not fused: no successor loop
+    912, Loop is parallelizable
+         Generated vector simd code for the loop containing reductions
+         FMA (fused multiply-add) instruction(s) generated
+pgc++ -Wall -Wextra -acc -fast -Minfo=all -lnvToolsExt -c read_file_funcs.cpp -o read_file_funcs.o
+"read_file_funcs.h", line 11: warning: last line of file ends without a newline
+  #endif /* READ_VECTOR_FILE_FUNCS_H */
+                                       ^
+
+"read_file_funcs.cpp", line 38: warning: variable "points2" was declared but never referenced
+          float* points2;
+                 ^
+
+read_hyperplane_tables(int, int, int, char *, float *):
+     98, Loop not vectorized/parallelized: potential early exits
+pgc++ -Wall -Wextra -acc -fast -Minfo=all -lnvToolsExt lsh_parallel_6.o read_file_funcs.o -o lsh_parallel_6
+/storage/software/binutils/2.36.1-GCCcore-10.3.0/bin/ld: warning: /storage/software/NVHPC/21.5/Linux_x86_64/21.5/compilers/lib/nvhpc.ld contains output sections; did you forget -T?
+

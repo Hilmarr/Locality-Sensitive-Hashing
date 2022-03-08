@@ -1,1 +1,66 @@
+nvprof --unified-memory-profiling off ./lsh_parallel_3 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ma^C/creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+[hilmarrw@ml1 testing3]$ make profile_lsh_serial_sift_nvprof 
+nvprof --unified-memory-profiling off ./lsh_serial \
+../test_data/sift/sift_base.fvecs \
+../test_data/sift/sift_query.fvecs \
+../test_data/sift/sift_groundtruth.ivecs \
+../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+==3232215== NVPROF is profiling process 3232215, command: ./lsh_serial ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+Calculating hash values for base vectors:
+   - time: 9.478 seconds
+Constructing lsh tables:
+   - time: 0.216 seconds
+Calculating hash values for query vectors:
+   - time: 0.076 seconds
+Finding potential matches
+   - time: 1.565 seconds
+Matching potential matches
+   - time: 28.087 seconds
+
+Potential matches found: 239775018
+Comparisons per query vector: 23977.501800
+Average portion of search space searched: 0.023978
+
+Correct ratio: 0.830300
+==3232215== Profiling application: ./lsh_serial ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+==3232215== Profiling result:
+No kernels were profiled.
+No API activities were profiled.
+
+==3232215== NVTX result:
+==3232215==   Thread "<unnamed>" (id = 2241813760)
+==3232215==     Domain "<unnamed>"
+==3232215==       Range "Calculating hash values for base vectors"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  9.36023s         1  9.36023s  9.36023s  9.36023s  Calculating hash values for base vectors
+No kernels were profiled in this range.
+No API activities were profiled in this range.
+
+==3232215==       Range "Calculating hash values for query vectors"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  75.837ms         1  75.837ms  75.837ms  75.837ms  Calculating hash values for query vectors
+No kernels were profiled in this range.
+No API activities were profiled in this range.
+
+==3232215==       Range "Constructing lsh tables"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  215.58ms         1  215.58ms  215.58ms  215.58ms  Constructing lsh tables
+No kernels were profiled in this range.
+No API activities were profiled in this range.
+
+==3232215==       Range "Finding potential matches"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  1.56580s         1  1.56580s  1.56580s  1.56580s  Finding potential matches
+No kernels were profiled in this range.
+No API activities were profiled in this range.
+
+==3232215==       Range "Matching potential matches"
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+          Range:  100.00%  28.0879s         1  28.0879s  28.0879s  28.0879s  Matching potential matches
+No kernels were profiled in this range.
+No API activities were profiled in this range.
 
