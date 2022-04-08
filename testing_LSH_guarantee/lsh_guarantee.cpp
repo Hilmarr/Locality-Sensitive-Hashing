@@ -10,7 +10,7 @@
 #include <sys/time.h>
 #endif
 
-#include "read_vector_file_funcs.h"
+#include "read_file_funcs.h"
 
 // Globally defined so that the compiler might make assumptions about it
 // later on if expedient
@@ -18,20 +18,27 @@ const int vectorLength = 128;
 const int _THRESHOLD = 35;
 const int THRESHOLD = _THRESHOLD * _THRESHOLD;  // Threshold to check on other side of hyperplane(s)
 
-inline int set_int_arr_size(int** arr, int curSize, int newSize) {
-    int* oldArr = *arr;
-    *arr = (int*)malloc(newSize * sizeof(int));
-    memcpy(*arr, oldArr, curSize * sizeof(int));
-    free(oldArr);
-    return newSize;
-}
-
+/**
+ * Calculates the hash values of the input points given its input hyperplanes,
+ * then stores those hash values into an array called indexGroupMap
+ * which will later map the point index into a group index used for indexing
+ * a second array.
+ *
+ * @param vectorLength : Number of dimensions for each point
+ * @param nPoints : Number of points to hash
+ * @param points : The points to hash
+ * @param nPlanes : Number of hyperplanes used
+ * @param hyperplanes : Array of hyperplanes of length nPlanes
+ *
+ * @param indexGroupMap : Output - Calculated hash values, may be used as indices
+ */
 void calculate_hash_values(
     // input
     int nPoints, float* __restrict__ points,
     int nPlanes, float* __restrict__ hyperplanes,
     // output
-    int* __restrict__ indexGroupMap) {
+    int* __restrict__ indexGroupMap)
+{
     // - Calculate hash values, keep track of sizes of each group -
     for (int i = 0; i < nPoints; i++) {
         float* point = &points[i * vectorLength];
@@ -54,13 +61,30 @@ void calculate_hash_values(
     }
 }
 
+/**
+ * Calculates the hash values of the input points given its input hyperplanes,
+ * then stores those hash values into an array called indexGroupMap
+ * which will later map the point index into a group index used for indexing
+ * a second array. Also stores the squared distances from each point to each
+ * hyperplane in the sqrdDists array
+ *
+ * @param vectorLength : Number of dimensions for each point
+ * @param nPoints : Number of points to hash
+ * @param points : The points to hash
+ * @param nPlanes : Number of hyperplanes used
+ * @param hyperplanes : Array of hyperplanes of length nPlanes
+ *
+ * @param indexGroupMap : Output - Calculated hash values, may be used as indices
+ * @param sqrdDists : Output - Distance from each point to each hyperplane
+ */
 void calculate_hash_values_and_dists(
     // input
     int nPoints, float* __restrict__ points,
     int nPlanes, float* __restrict__ hyperplanes,
     // output
     int* __restrict__ indexGroupMap,
-    float* __restrict__ sqrdDists) {
+    float* __restrict__ sqrdDists)
+{
     // - Calculate hash values, keep track of sizes of each group -
     for (int i = 0; i < nPoints; i++) {
         float* point = &points[i * vectorLength];
@@ -86,13 +110,39 @@ void calculate_hash_values_and_dists(
     }
 }
 
+/**
+ * Takes as input an array of point-index-to-group mappings. Turns this into a
+ * data structure which takes the hash value of a point and returns a group index
+ * into a new array called groupArray, which itself contains indices into the
+ * original point array.
+ * The arrays, groupSizeMap and groupIndexMap, are used to easily index or
+ * iterate through specific groups in the groupArray. This is handy when we want
+ * to compare a point to other points in its group.
+ *
+ * @param nPoints :            The size of indexGroupMap, groupArray,
+ *                             and in general the number of points
+
+ * @param nGroups :            The number of groups.
+ *
+ * @param indexGroupMap :      Mapping from indices to groups, calculated by function
+ *                             'calculate_hash_values'
+ *
+ * @param groupIndexMapTails : Temporary array used when creating groupArray.
+ *                             Preallocated only for possible increased efficiency.
+ *
+ * @param groupArray    : Output - An array with point indices sorted by their group.
+ *                                 Maps into the original point array.
+ *
+ * @param groupIndexMap : Output - Array of group indices, indexes groupArray
+ */
 void organize_points_into_groups(
     // input
     int nPoints, int nGroups,
     int* __restrict__ indexGroupMap,
     // output
     int* __restrict__ groupArray,
-    int* __restrict__ groupIndexMap) {
+    int* __restrict__ groupIndexMap)
+{
     int* groupSizeMap = (int*)calloc(nGroups, sizeof(int));
     int* groupIndexMapTails = (int*)calloc(nGroups, sizeof(int));
 
@@ -128,6 +178,156 @@ void organize_points_into_groups(
     free(groupIndexMapTails);
 }
 
+// Have to reserve nGroups elements for both combMasks and combDists
+// for the function to be completely secure.
+// nGroups is the maximum amount of boxes that a point can be mapped to.
+
+/**
+ * Takes squared distances as arguments and finds all non-ordered combinations
+ * of those distances that are still lower than the threshold. Returns the masks
+ * representing the combinations in the combMasks array, and the accumulated
+ * distances in the combDists array.
+ * 
+ * Have to reserve nGroups elements for both combMasks and combDists
+ * for the function to be completely secure.
+ * nGroups is the maximum amount of boxes that a point can be mapped to.
+ *
+ * @param sqrdDists : The squared dist for each hyperplane
+ * 
+ * @param nPlanes : The number of hyperplanes (length of sqrdDists)
+ * 
+ * @param threshold : The maximum distance allowed squared
+ *
+ * @param combMasks : Output - Masks where the sum of distances for the sides
+ *                             marked as 1 are lower than the threshold.
+ *
+ * @param combDists : Output - The accumulated sum of distances for each mask
+ *
+ * @return The length of combMasks
+ */
+int findNeighborMasks(float* sqrdDists, int nPlanes, float threshold,
+                      int* combMasks, float* combDists) {
+    // Add single values below the threshold to lists
+    int setLen = 0;
+    for (int i = 0; i < nPlanes; i++) {
+        if (sqrdDists[i] < threshold) {
+            combMasks[setLen] = 1 << i;
+            combDists[setLen] = sqrdDists[i];
+            setLen++;
+        }
+    }
+
+    // For every value starting with the initial setLen, try to combine the value
+    // with all other values that comes after it in the list
+    // can be combined if combDists[k] + combDists[i] < threshold
+    int underThreshLen = setLen;
+    for (int k = underThreshLen - 2; k >= 0; k--) {
+        int tmp = setLen;
+        for (int i = k + 1; i < setLen; i++) {
+            if (combDists[k] < threshold) {
+                int dist = combDists[k] + combDists[i];
+                if (dist < threshold) {
+                    combMasks[tmp] = combMasks[k] | combMasks[i];
+                    combDists[tmp] = dist;
+                    tmp++;
+                }
+            }
+        }
+        setLen = tmp;
+    }
+
+    return setLen;
+}
+
+/**
+ * For every point it goes through all the groups in groupArray it can get mapped into.
+ * groupArray stores these points as indices into the original point array,
+ * it does this for all tables.
+ * Then the function puts indices it can get mapped into that point's place in
+ * the potentialMatches array. After that the function creates two other arrays
+ * called potentialMatchesIndices and potentialMatchesLengths; these two arrays
+ * are used to index and iterate the potentialMatches array.
+ *
+ * @param nPoints: Number of points in the LSH tables and size of groupArray
+ * @param indexGroupMap : Calculated hash values
+ * @param indexGroupMapTableLen : Length of indexGroupMap per table
+ * @param groupArray : Arrays with point indices sorted by their group.
+ * @param groupIndexMap : Arrays with group indices, indexes into groupArray.
+ *
+ * @param pPotentialMatches : Output.
+ *              Pointer to an array with indices into point1 containing the
+ *              indices of all possible matches for each point in points2
+ *
+ * @param pPotentialMatchesIndices : Output.
+ *              Pointer to array with indices into potentialMatches
+ *
+ * @return The total amount of matches
+ */
+int find_potential_matches(
+    int nPlanes,
+    int nGroups,
+    int nPoints,
+    int* __restrict__ indexGroupMap,
+    float* __restrict__ sqrdDists,
+    int* __restrict__ groupArray,
+    int* __restrict__ groupIndexMap,
+    int** __restrict__ pPotentialMatches,
+    int** __restrict__ pPotentialMatchesIndices)
+{
+    // int potentialMatchesLen = 1e4 * nPoints;
+    int potentialMatchesLen = 1e9;
+    int* potentialMatches = (int*)malloc(potentialMatchesLen * sizeof(int));
+    int* potentialMatchesIndices = (int*)malloc((nPoints + 1) * sizeof(int));
+
+    // Masks and distances for all combinations of hyperplanes where the euclidean
+    // distance from the point to the intersection of the hyperplane is below
+    // a set threshold.
+    // nGroups is the theoretical upper limit of possible combinations, but
+    // in reality the number of potential matches will likely never be that high
+    int* combMasks = (int*)malloc((1+nGroups) * sizeof(int));
+    combMasks[0] = 0;
+    float* combDists = (float*)malloc(nGroups * sizeof(float));
+    int cnt = 0;
+    for (int i = 0; i < nPoints; i++) {
+        // Set the index to the groups that the query point is mapped to
+        potentialMatchesIndices[i] = cnt;
+        // Get the hashcode for this query point
+        int hashcode = indexGroupMap[i];
+        // Find all combinations of hyperplanes that is closer than sqrt(THRESHOLD)
+        int setLen = findNeighborMasks(&sqrdDists[i * nPlanes], nPlanes, THRESHOLD,
+                                       combMasks+1, combDists);
+        // Find potential matches by checking hashcode and all hashcodes within
+        // a certain distance
+        for (int j = 0; j < setLen+1; j++) {
+            // get next hashcode
+            int hc = hashcode ^ combMasks[j];
+            // Find start and end index of the group
+            int kStart = groupIndexMap[hc];
+            int kEnd = groupIndexMap[hc+1];
+            int groupSize = kEnd - kStart;
+            // Check if we have reserved enough memory
+            if (cnt + groupSize >= potentialMatchesLen) {
+                fprintf(stderr, "Not enough with %d elements for potentialMatches. ", potentialMatchesLen);
+                exit(1);
+            }
+            // Add point indices in group hc to potentialMatches
+            for (int k = kStart; k < kEnd; k++) {
+                potentialMatches[cnt] = groupArray[k];
+                cnt++;
+            }
+        }
+    }
+    potentialMatchesIndices[nPoints] = cnt;
+
+    free(combMasks);
+    free(combDists);
+
+    *pPotentialMatches = potentialMatches;
+    *pPotentialMatchesIndices = potentialMatchesIndices;
+
+    return cnt;
+}
+
 void match_points(int nQueryVecs,
                   float* __restrict__ queryVecs,
                   float* __restrict__ baseVecs,
@@ -135,7 +335,8 @@ void match_points(int nQueryVecs,
                   int* __restrict__ potentialMatchesIndices,
                   // outputs
                   int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
-                  int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2) {
+                  int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2)
+{
     for (int i = 0; i < nQueryVecs; i++) {
         // Find the group of elements from groupArray to match with
         float bestMatchDist = 1e10;
@@ -174,105 +375,6 @@ void match_points(int nQueryVecs,
     }
 }
 
-// Have to reserve nGroups elements for both combMasks and combDists
-// for the function to be completely secure.
-// nGroups is the maximum amount of boxes that a point can be mapped to.
-int findNeighborMasks(float* sqrdDists, int nPlanes, float threshold,
-                      int* combMasks, float* combDists) {
-    // Add single values below the threshold to lists
-    int setLen = 0;
-    for (int i = 0; i < nPlanes; i++) {
-        if (sqrdDists[i] < threshold) {
-            combMasks[setLen] = 1 << i;
-            combDists[setLen] = sqrdDists[i];
-            setLen++;
-        }
-    }
-
-    // For every value starting with the initial setLen, try to combine the value
-    // with all other values that comes after it in the list
-    // can be combined if combDists[k] + combDists[i] < threshold
-    int underThreshLen = setLen;
-    for (int k = underThreshLen - 2; k >= 0; k--) {
-        int tmp = setLen;
-        for (int i = k + 1; i < setLen; i++) {
-            if (combDists[k] < threshold) {
-                int dist = combDists[k] + combDists[i];
-                if (dist < threshold) {
-                    combMasks[tmp] = combMasks[k] | combMasks[i];
-                    combDists[tmp] = dist;
-                    tmp++;
-                }
-            }
-        }
-        setLen = tmp;
-    }
-
-    return setLen;
-}
-
-int find_potential_matches(
-    int nPlanes, int nGroups, int nPoints,
-    int* indexGroupMap, float* sqrdDists,
-    int* groupIndexMap, int* groupArray,
-    int** pPotentialMatches, int** pPotentialMatchesIndices)
-{
-    // int potentialMatchesLen = 1e4 * nPoints;
-    int potentialMatchesLen = 1e9;
-    int* potentialMatches = (int*)malloc(potentialMatchesLen * sizeof(int));
-    int* potentialMatchesIndices = (int*)malloc((nPoints + 1) * sizeof(int));
-
-    // Masks and distances for all combinations of hyperplanes where the euclidean
-    // distance from the point to the intersection of the hyperplane is below
-    // a set threshold.
-    // nGroups is the theoretical upper limit of possible combinations, but
-    // in reality the number of potential matches will likely never be that high
-    int* combMasks = (int*)malloc((1+nGroups) * sizeof(int));
-    combMasks[0] = 0;
-    float* combDists = (float*)malloc(nGroups * sizeof(float));
-    int cnt = 0;
-    for (int i = 0; i < nPoints; i++) {
-        // Set the index to the groups that the query point is mapped to
-        potentialMatchesIndices[i] = cnt;
-        // Get the hashcode for this query point
-        int hashcode = indexGroupMap[i];
-        // Find all combinations of hyperplanes that is closer than sqrt(THRESHOLD)
-        int setLen = findNeighborMasks(&sqrdDists[i * nPlanes], nPlanes, THRESHOLD,
-                                       combMasks+1, combDists);
-        // Find potential matches by checking hashcode and all hashcodes within
-        // a certain distance
-        for (int j = 0; j < setLen+1; j++) {
-            // get next hashcode
-            int hc = hashcode ^ combMasks[j];
-            // Find start and end index of the group
-            int kStart = groupIndexMap[hc];
-            int kEnd = groupIndexMap[hc+1];
-            int groupSize = kEnd - kStart;
-            // Check if we have reserved enough memory
-            if (cnt + groupSize >= potentialMatchesLen) {
-                fprintf(stderr, "Not enough with %d elements for potentialMatches. ", potentialMatchesLen);
-                // fprintf(stderr, "Expanding to %d elements\n", 2 * (cnt + groupSize));
-                // potentialMatchesLen = set_int_arr_size(
-                //     &potentialMatches, potentialMatchesLen, 2 * (cnt + groupSize));
-                exit(1);
-            }
-            // Add point indices in group hc to potentialMatches
-            for (int k = kStart; k < kEnd; k++) {
-                potentialMatches[cnt] = groupArray[k];
-                cnt++;
-            }
-        }
-    }
-    potentialMatchesIndices[nPoints] = cnt;
-
-    free(combMasks);
-    free(combDists);
-
-    *pPotentialMatches = potentialMatches;
-    *pPotentialMatchesIndices = potentialMatchesIndices;
-
-    return cnt;
-}
 
 int main(int argc, char** argv) {
     int nBaseVecs = 0;   // number of base vectors
@@ -445,18 +547,13 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    int potentialMatchesFound;
+    int nPotentialMatches;
 
-    potentialMatchesFound = find_potential_matches(
+    nPotentialMatches = find_potential_matches(
         nPlanes, nGroups, nQueryVecs,
         indexGroupMap, sqrdDists,
-        groupIndexMap, groupArray,
+        groupArray, groupIndexMap,
         &potentialMatches, &potentialMatchesIndices);
-
-    // find_potential_matches(nPlanes, nGroups, nQueryVecs,
-    //                        indexGroupMap, sqrdDists,
-    //                        groupIndexMap, groupArray,
-    //                        &potentialMatches, &potentialMatchesIndices);
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -509,34 +606,39 @@ int main(int argc, char** argv) {
     double correctRatio = ((double)correct) / nQueryVecs;
     printf("Correct ratio: %f\n", correctRatio);
 
-    long unsigned int diff_both = 0;
-    long unsigned int diff_correct = 0;
-    long unsigned int diff_incorrect = 0;
-    for (int i = 0; i < nQueryVecs; i++) {
-        double diff = 0;
-        float* p_query = &queryVecs[i * 128];
-        float* p_base = &baseVecs[groundTruth[i] * 128];
-        for (int j = 0; j < 128; j++) {
-            diff += (p_query[i] - p_base[i]) * (p_query[i] - p_base[i]);
-        }
-        diff = sqrt(diff);
-        diff_both += diff;
-        if (lshMatches[i] == groundTruth[i]) {
-            diff_correct += (int)diff;
-        } else {
-            diff_incorrect += (int)diff;
-        }
-    }
-    int incorrect = nQueryVecs - correct;
+    // long unsigned int diff_both = 0;
+    // long unsigned int diff_correct = 0;
+    // long unsigned int diff_incorrect = 0;
+    // for (int i = 0; i < nQueryVecs; i++) {
+    //     double diff = 0;
+    //     float* p_query = &queryVecs[i * 128];
+    //     float* p_base = &baseVecs[groundTruth[i] * 128];
+    //     for (int j = 0; j < 128; j++) {
+    //         diff += (p_query[i] - p_base[i]) * (p_query[i] - p_base[i]);
+    //     }
+    //     diff = sqrt(diff);
+    //     diff_both += diff;
+    //     if (lshMatches[i] == groundTruth[i]) {
+    //         diff_correct += (int)diff;
+    //     } else {
+    //         diff_incorrect += (int)diff;
+    //     }
+    // }
+    // int incorrect = nQueryVecs - correct;
 
-    printf("Average distance of best fits: %f\n",
-           ((double)diff_both) / nQueryVecs);
-    printf("Average distance correctly classified points: %f\n",
-           ((double)diff_correct) / correct);
-    printf("Average distance incorrectly classified points: %f\n",
-           ((double)diff_incorrect) / incorrect);
+    // printf("Average distance of best fits: %f\n",
+    //        ((double)diff_both) / nQueryVecs);
+    // printf("Average distance correctly classified points: %f\n",
+    //        ((double)diff_correct) / correct);
+    // printf("Average distance incorrectly classified points: %f\n",
+    //        ((double)diff_incorrect) / incorrect);
 
-    printf("Potential matches found and checked: %d\n", potentialMatchesFound);
+    printf("\n");
+    printf("Potential matches found: %d\n", nPotentialMatches);
+    double matchesPerQueryVector = ((double)nPotentialMatches) / nQueryVecs;
+    printf("Comparisons per query vector: %f\n", matchesPerQueryVector);
+    printf("Average portion of search space searched: %f\n", matchesPerQueryVector / nBaseVecs);
+    printf("\n");
 
     // --- Free memory ---
 
