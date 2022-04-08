@@ -35,7 +35,6 @@ int read_vector_file(char* fPath, int** arr) {
         // read nr of elements in component
         int d = 0;
         ret = fread(&d, 4, 1, fp);
-        float* points2;
         if (ret == 0) break;
         // move component into memory
         ret = fread(data_ptr, 4, d, fp);

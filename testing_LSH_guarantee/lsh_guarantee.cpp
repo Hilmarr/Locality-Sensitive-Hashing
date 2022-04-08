@@ -5,9 +5,14 @@
 #include <numeric>
 
 #define TIME_LSH
+// #define NVTX_PROFILE
 
 #ifdef TIME_LSH
 #include <sys/time.h>
+#endif
+
+#ifdef NVTX_PROFILE
+#include <nvToolsExt.h>
 #endif
 
 #include "read_file_funcs.h"
@@ -15,7 +20,7 @@
 // Globally defined so that the compiler might make assumptions about it
 // later on if expedient
 const int vectorLength = 128;
-const int _THRESHOLD = 35;
+const int _THRESHOLD = 15;
 const int THRESHOLD = _THRESHOLD * _THRESHOLD;  // Threshold to check on other side of hyperplane(s)
 
 /**
@@ -24,7 +29,6 @@ const int THRESHOLD = _THRESHOLD * _THRESHOLD;  // Threshold to check on other s
  * which will later map the point index into a group index used for indexing
  * a second array.
  *
- * @param vectorLength : Number of dimensions for each point
  * @param nPoints : Number of points to hash
  * @param points : The points to hash
  * @param nPlanes : Number of hyperplanes used
@@ -68,7 +72,6 @@ void calculate_hash_values(
  * a second array. Also stores the squared distances from each point to each
  * hyperplane in the sqrdDists array
  *
- * @param vectorLength : Number of dimensions for each point
  * @param nPoints : Number of points to hash
  * @param points : The points to hash
  * @param nPlanes : Number of hyperplanes used
@@ -328,7 +331,38 @@ int find_potential_matches(
     return cnt;
 }
 
+/**
+ * Uses result from find_potential_matches to match points1 and points2
+ *
+ * @param nQueryVecs : Number of query vectors
+ *
+ * @param nBaseVecs : Number of base vectors
+ *
+ * @param queryVecs : Query vectors
+ *
+ * @param baseVecs : Base vectors (Array of points used to create the LSH tables)
+ *
+ * @param potentialMatches : An array with indices into point1 containing the
+ *                           indices of all possible matches for each point in points2
+ *                           (i.e. potential matches between points2 and points1)
+ *
+ * @param potentialMatchesIndices : Indices used to index into potentialMatches
+ *
+ *
+ * @param lshMatches : Output - Index into points1 representing the best match
+ *                              between points2  and points1
+ *
+ * @param bestMatchDists : Output - Distances between points for every match
+ *                                  in lshMatches
+ *
+ * @param lshMatches2 : Output - Index into points1 representing the 2nd best match
+ *                              between points2  and points1
+ *
+ * @param bestMatchDists2 : Output - Distances between points for every match
+ *                                  in lshMatches2
+ */
 void match_points(int nQueryVecs,
+                  int nBaseVecs,
                   float* __restrict__ queryVecs,
                   float* __restrict__ baseVecs,
                   int* __restrict__ potentialMatches,
@@ -382,7 +416,7 @@ int main(int argc, char** argv) {
 
     const int nPlanes = 16;
 
-    ;  // -----    Read data    -----
+    // -----    Read data    -----
 
     // Check number of arguments
     if (argc < 5) {
@@ -438,8 +472,16 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+#ifdef NVTX_PROFILE
+    nvtxRangePush("Calculating hash values for base vectors");
+#endif
+
     calculate_hash_values(nBaseVecs, baseVecs, nPlanes, hyperplanes,
                           indexGroupMap);
+
+#ifdef NVTX_PROFILE
+    nvtxRangePop();
+#endif
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -456,8 +498,16 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+#ifdef NVTX_PROFILE
+    nvtxRangePush("Constructing lsh tables");
+#endif
+
     organize_points_into_groups(nBaseVecs, nGroups, indexGroupMap,
                                 groupArray, groupIndexMap);
+
+#ifdef NVTX_PROFILE
+    nvtxRangePop();
+#endif
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -505,29 +555,16 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+#ifdef NVTX_PROFILE
+    nvtxRangePush("Calculating hash values for query vectors");
+#endif
+
     calculate_hash_values_and_dists(nQueryVecs, queryVecs, nPlanes, hyperplanes,
                                     indexGroupMap, sqrdDists);
 
-    // double accArr[nPlanes];
-    // double acc = 0;
-    // // printf("Distances from hyperplanes\n\n");
-    // for (int i = 0; i < nQueryVecs; i++) {
-    //     // printf("Point %d\n", i);
-    //     for (int j = 0; j < nPlanes; j++) {
-    //         double dist = sqrt(sqrdDists[i * nPlanes + j]);
-    //         // printf("  %f\n", dist);
-    //         acc += dist;
-    //         accArr[j] += dist;
-    //     }
-    //     // printf("\n");
-    // }
-    // printf("Mean distance from hyperplane = %f\n\n", acc / (nQueryVecs*nPlanes));
-    // for (int i = 0; i < nPlanes; i++) {
-    //     printf("  Mean distance from hyperplane %d = %f\n", i, (accArr[i] / nQueryVecs));
-    // }
-    // printf("\n");
-
-    // return 0;
+#ifdef NVTX_PROFILE
+    nvtxRangePop();
+#endif
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -547,6 +584,10 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+#ifdef NVTX_PROFILE
+    nvtxRangePush("Finding potential matches");
+#endif
+
     int nPotentialMatches;
 
     nPotentialMatches = find_potential_matches(
@@ -554,6 +595,10 @@ int main(int argc, char** argv) {
         indexGroupMap, sqrdDists,
         groupArray, groupIndexMap,
         &potentialMatches, &potentialMatchesIndices);
+
+#ifdef NVTX_PROFILE
+    nvtxRangePop();
+#endif
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -572,10 +617,18 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
+#ifdef NVTX_PROFILE
+    nvtxRangePush("Matching potential matches");
+#endif
+
     // - Compare points -
-    match_points(nQueryVecs, queryVecs, baseVecs,
+    match_points(nQueryVecs, nBaseVecs, queryVecs, baseVecs,
                  potentialMatches, potentialMatchesIndices,
                  lshMatches, bestMatchDists, lshMatches2, bestMatchDists2);
+
+#ifdef NVTX_PROFILE
+    nvtxRangePop();
+#endif
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -605,33 +658,6 @@ int main(int argc, char** argv) {
     }
     double correctRatio = ((double)correct) / nQueryVecs;
     printf("Correct ratio: %f\n", correctRatio);
-
-    // long unsigned int diff_both = 0;
-    // long unsigned int diff_correct = 0;
-    // long unsigned int diff_incorrect = 0;
-    // for (int i = 0; i < nQueryVecs; i++) {
-    //     double diff = 0;
-    //     float* p_query = &queryVecs[i * 128];
-    //     float* p_base = &baseVecs[groundTruth[i] * 128];
-    //     for (int j = 0; j < 128; j++) {
-    //         diff += (p_query[i] - p_base[i]) * (p_query[i] - p_base[i]);
-    //     }
-    //     diff = sqrt(diff);
-    //     diff_both += diff;
-    //     if (lshMatches[i] == groundTruth[i]) {
-    //         diff_correct += (int)diff;
-    //     } else {
-    //         diff_incorrect += (int)diff;
-    //     }
-    // }
-    // int incorrect = nQueryVecs - correct;
-
-    // printf("Average distance of best fits: %f\n",
-    //        ((double)diff_both) / nQueryVecs);
-    // printf("Average distance correctly classified points: %f\n",
-    //        ((double)diff_correct) / correct);
-    // printf("Average distance incorrectly classified points: %f\n",
-    //        ((double)diff_incorrect) / incorrect);
 
     printf("\n");
     printf("Potential matches found: %d\n", nPotentialMatches);
