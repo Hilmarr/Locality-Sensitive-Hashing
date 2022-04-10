@@ -1,11 +1,11 @@
 # CC = g++
-# CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic # -g -pg
+# CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic -g -pg
 
 CC = pgc++
 CFLAGS = -Wall -Wextra -acc -fast -Minfo=all
 # CFLAGS = -Wall -Wextra -acc -fast -Minfo=all -lnvToolsExt
 
-FILES = lsh_guarantee lsh_parallel_3 lsh_parallel_4 lsh_parallel_5
+FILES = lsh_guarantee lsh_parallel_3 lsh_parallel_4 lsh_parallel_5 lsh_parallel_test
 
 .PHONY: default all clean
 
@@ -31,6 +31,13 @@ lsh_parallel_4: lsh_parallel_4.o read_file_funcs.o
 lsh_parallel_5: lsh_parallel_5.o read_file_funcs.o
 	$(CC) $(CFLAGS) $^ -o $@
 
+lsh_parallel_test: lsh_parallel_test.o read_file_funcs.o
+	$(CC) $(CFLAGS) $^ -o $@
+
+
+
+profile_lsh_guarantee:
+	gprof lsh_guarantee gmon.out > gprof_results.txt
 
 run_lsh_guarantee_siftsmall: lsh_guarantee
 	./lsh_guarantee \
@@ -120,7 +127,12 @@ profile_lsh_parallel_5_sift_nvprof: lsh_parallel_5
 	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
 
 
-
+run_lsh_parallel_test_sift: lsh_parallel_test
+	./lsh_parallel_test \
+	../test_data/sift/sift_base.fvecs \
+	../test_data/sift/sift_query.fvecs \
+	../test_data/sift/sift_groundtruth.ivecs \
+	../creating_hyperplanes/better_hyperplanes.dat
 
 
 clean:

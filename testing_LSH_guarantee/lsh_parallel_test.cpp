@@ -5,7 +5,7 @@
 #include <numeric>
 
 #define TIME_LSH
-// #define NVTX_PROFILE
+#define NVTX_PROFILE
 
 #ifdef TIME_LSH
 #include <sys/time.h>
@@ -44,15 +44,23 @@ void calculate_hash_values(
     int* __restrict__ indexGroupMap)
 {
     // - Calculate hash values, keep track of sizes of each group -
+#pragma acc data \
+  pcopyin(points[nPoints*vectorLength]) \
+  pcopyin(hyperplanes[nPlanes*vectorLength]) \
+  pcopyout(indexGroupMap[nPoints])
+ {
+    #pragma acc parallel loop gang worker num_workers(128) vector_length(8)
     for (int i = 0; i < nPoints; i++) {
         float* point = &points[i * vectorLength];
         int hashcode = 0;  //  hashcode will be the group index
 
         // calculate hash value of the i'th point, store resut in indexGroupMap
+        #pragma acc loop reduction(|:hashcode) vector
         for (int j = 0; j < nPlanes; j++) {
             float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
             // calculate point * hplane
             float vecMul = 0;
+            #pragma acc loop reduction(+:vecMul) seq
             for (int k = 0; k < vectorLength; k++) {
                 vecMul += point[k] * hplane[k];
             }
@@ -63,6 +71,7 @@ void calculate_hash_values(
         }
         indexGroupMap[i] = hashcode;  // save the hashcode
     }
+ }
 }
 
 /**
@@ -341,7 +350,7 @@ int find_potential_matches(
  * @param queryVecs : Query vectors
  *
  * @param baseVecs : Base vectors (Array of points used to create the LSH tables)
- *
+ * 
  * @param nPotentialMatches : Number of potential matches
  *
  * @param potentialMatches : An array with indices into point1 containing the
@@ -374,8 +383,20 @@ void match_points(int nQueryVecs,
                   int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
                   int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2)
 {
+#pragma acc data \
+    pcopyin(queryVecs[nQueryVecs*vectorLength]) \
+    pcopyin(baseVecs[nBaseVecs*vectorLength]) \
+    pcopyin(potentialMatches[nPotentialMatches])\
+    pcopyin(potentialMatchesIndices[nQueryVecs+1]) \
+    pcopy(lshMatches[nQueryVecs]) \
+    pcopy(bestMatchDists[nQueryVecs]) \
+    pcopy(lshMatches2[nQueryVecs]) \
+    pcopy(bestMatchDists2[nQueryVecs]) 
+ {
+    #pragma acc parallel loop  num_workers(1) vector_length(32)
     for (int i = 0; i < nQueryVecs; i++) {
         // Find the group of elements from groupArray to match with
+        bool changed = false;
         float bestMatchDist = 1e10;
         float bestMatchDist2 = 1e10;
         int match = -1;
@@ -390,6 +411,7 @@ void match_points(int nQueryVecs,
             
             // diff = sum((queryVecs[i][:] - baseVecs[idx][:]) .^ 2);
             float diff = 0;
+            #pragma acc loop reduction(+:diff) vector
             for (int k = 0; k < vectorLength; k++) {
                 float tmp = queryVecs[i * vectorLength + k] - baseVecs[idx * vectorLength + k];
                 diff += tmp * tmp;
@@ -402,14 +424,19 @@ void match_points(int nQueryVecs,
                 // update best value
                 bestMatchDist = diff;
                 match = idx;
+                changed = true;
             }
         }
 
-        lshMatches[i] = match;
-        bestMatchDists[i] = bestMatchDist;
-        lshMatches2[i] = match2;
-        bestMatchDists2[i] = bestMatchDist2;
+        if (changed)
+        {
+            lshMatches[i] = match;
+            bestMatchDists[i] = bestMatchDist;
+            lshMatches2[i] = match2;
+            bestMatchDists2[i] = bestMatchDist2;
+        }
     }
+ }
 }
 
 

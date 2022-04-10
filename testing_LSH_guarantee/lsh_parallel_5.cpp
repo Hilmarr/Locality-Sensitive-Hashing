@@ -20,7 +20,7 @@
 // Globally defined so that the compiler might make assumptions about it
 // later on if expedient
 const int vectorLength = 128;
-const int _THRESHOLD = 15;
+const int _THRESHOLD = 35;
 const int THRESHOLD = _THRESHOLD * _THRESHOLD;  // Threshold to check on other side of hyperplane(s)
 
 /**
@@ -393,7 +393,7 @@ void match_points(int nQueryVecs,
     pcopy(lshMatches2[nQueryVecs]) \
     pcopy(bestMatchDists2[nQueryVecs]) 
  {
-    #pragma acc parallel loop  num_workers(1) vector_length(32)
+    #pragma acc parallel loop gang worker num_workers(1) vector_length(32)
     for (int i = 0; i < nQueryVecs; i++) {
         // Find the group of elements from groupArray to match with
         float bestMatchDist = 1e10;
@@ -620,8 +620,6 @@ int main(int argc, char** argv) {
         indexGroupMap, sqrdDists,
         groupArray, groupIndexMap,
         &potentialMatches, &potentialMatchesIndices);
-
-    printf("number of potential matches = %d \n", nPotentialMatches);
 
 #ifdef NVTX_PROFILE
     nvtxRangePop();

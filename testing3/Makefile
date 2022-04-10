@@ -6,7 +6,7 @@ CC = pgc++
 CFLAGS = -Wall -Wextra -acc -fast -Minfo=all -lnvToolsExt
 # CFLAGS = -Wall -Wextra -Minfo=all -g -pg
 
-FILES = lsh_serial lsh_parallel_3 lsh_parallel_4 lsh_parallel_5 lsh_parallel_6 lsh_parallel_7
+FILES = lsh_serial lsh_parallel_3 lsh_parallel_4 lsh_parallel_5 lsh_parallel_6
 
 .PHONY: default all clean profile_lsh
 
@@ -33,9 +33,6 @@ lsh_parallel_5: lsh_parallel_5.o read_file_funcs.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 lsh_parallel_6: lsh_parallel_6.o read_file_funcs.o
-	$(CC) $(CFLAGS) $^ -o $@
-
-lsh_parallel_7: lsh_parallel_7.o read_file_funcs.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 profile_lsh_serial:
