@@ -1,0 +1,80 @@
+time ./lsh_parallel_4 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/better_hyperplanes.dat
+calculate_hash_values for base vectors:
+   - time: 0.397 seconds
+organize_points_into_groups:
+   - time: 0.016 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.005 seconds
+find_potential_matches for query vectors:
+   - time: 0.180 seconds
+match points:
+   - time: 0.382 seconds
+
+Potential matches found: 37891999
+Comparisons per query vector: 3789.199900
+Average portion of search space searched: 0.003789
+
+Correct ratio: 0.479900
+
+real	0m1,446s
+user	0m0,853s
+sys	0m0,568s
+
+
+time ./lsh_parallel_4 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/better_hyperplanes.dat
+calculate_hash_values for base vectors:
+   - time: 0.448 seconds
+organize_points_into_groups:
+   - time: 0.014 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.005 seconds
+find_potential_matches for query vectors:
+   - time: 0.231 seconds
+match points:
+   - time: 0.346 seconds
+
+Potential matches found: 37891999
+Comparisons per query vector: 3789.199900
+Average portion of search space searched: 0.003789
+
+Correct ratio: 0.479900
+
+real	0m1,816s
+user	0m0,923s
+sys	0m0,861s
+
+
+time ./lsh_parallel_4 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/better_hyperplanes.dat
+calculate_hash_values for base vectors:
+   - time: 0.434 seconds
+organize_points_into_groups:
+   - time: 0.010 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.005 seconds
+find_potential_matches for query vectors:
+   - time: 0.084 seconds
+match points:
+   - time: 0.355 seconds
+
+Potential matches found: 37891999
+Comparisons per query vector: 3789.199900
+Average portion of search space searched: 0.003789
+
+Correct ratio: 0.479900
+
+real	0m1,474s
+user	0m0,774s
+sys	0m0,661s
+

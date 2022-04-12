@@ -1,0 +1,109 @@
+time ./lsh_parallel_4 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/better_hyperplanes.dat
+calculate_hash_values for base vectors:
+   - time: 0.414 seconds
+organize_points_into_groups:
+   - time: 0.018 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.004 seconds
+find_potential_matches for query vectors:
+   - time: 2.127 seconds
+match points:
+   - time: 1.996 seconds
+
+Potential matches found: 272585660
+Comparisons per query vector: 27258.566000
+Average portion of search space searched: 0.027259
+
+Correct ratio: 0.833600
+
+real	0m5,463s
+user	0m3,568s
+sys	0m1,844s
+
+
+
+[hilmarrw@ml1 testing_LSH_guarantee]$ time ./lsh_parallel_4 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/better_hyperplanes.dat
+calculate_hash_values for base vectors:
+   - time: 0.498 seconds
+organize_points_into_groups:
+   - time: 0.018 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.005 seconds
+find_potential_matches for query vectors:
+   - time: 2.255 seconds
+match points:
+   - time: 2.247 seconds
+
+Potential matches found: 272585660
+Comparisons per query vector: 27258.566000
+Average portion of search space searched: 0.027259
+
+Correct ratio: 0.833600
+
+real	0m5,923s
+user	0m3,821s
+sys	0m2,048s
+
+
+
+[hilmarrw@ml1 testing_LSH_guarantee]$ time ./lsh_parallel_4 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/better_hyperplanes.dat
+calculate_hash_values for base vectors:
+   - time: 0.352 seconds
+organize_points_into_groups:
+   - time: 0.010 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.004 seconds
+find_potential_matches for query vectors:
+   - time: 1.324 seconds
+match points:
+   - time: 1.789 seconds
+
+Potential matches found: 272585660
+Comparisons per query vector: 27258.566000
+Average portion of search space searched: 0.027259
+
+Correct ratio: 0.833600
+
+real	0m4,302s
+user	0m2,933s
+sys	0m1,331s
+
+
+[hilmarrw@ml1 testing_LSH_guarantee]$ time ./lsh_parallel_4 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/better_hyperplanes.dat
+calculate_hash_values for base vectors:
+   - time: 0.376 seconds
+organize_points_into_groups:
+   - time: 0.010 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.004 seconds
+find_potential_matches for query vectors:
+   - time: 0.837 seconds
+match points:
+   - time: 1.869 seconds
+
+Potential matches found: 272585660
+Comparisons per query vector: 27258.566000
+Average portion of search space searched: 0.027259
+
+Correct ratio: 0.833600
+
+real	0m3,898s
+user	0m2,859s
+sys	0m1,002s
+

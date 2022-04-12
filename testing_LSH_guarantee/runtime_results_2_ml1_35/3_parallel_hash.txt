@@ -1,0 +1,26 @@
+time ./lsh_parallel_3 \
+> ../test_data/sift/sift_base.fvecs \
+> ../test_data/sift/sift_query.fvecs \
+> ../test_data/sift/sift_groundtruth.ivecs \
+> ../creating_hyperplanes/better_hyperplanes.dat
+calculate_hash_values for base vectors:
+   - time: 0.480 seconds
+organize_points_into_groups:
+   - time: 0.017 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.005 seconds
+find_potential_matches for query vectors:
+   - time: 2.063 seconds
+match points:
+   - time: 54.508 seconds
+
+Potential matches found: 272585660
+Comparisons per query vector: 27258.566000
+Average portion of search space searched: 0.027259
+
+Correct ratio: 0.833600
+
+real	0m57,965s
+user	0m54,226s
+sys	0m3,164s
+

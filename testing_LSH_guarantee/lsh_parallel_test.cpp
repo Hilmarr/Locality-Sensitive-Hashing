@@ -20,7 +20,7 @@
 // Globally defined so that the compiler might make assumptions about it
 // later on if expedient
 const int vectorLength = 128;
-const int _THRESHOLD = 35;
+const int _THRESHOLD = 18;
 const int THRESHOLD = _THRESHOLD * _THRESHOLD;  // Threshold to check on other side of hyperplane(s)
 
 /**

@@ -9,7 +9,7 @@ FILES = lsh_guarantee lsh_parallel_3 lsh_parallel_4 lsh_parallel_5 lsh_parallel_
 
 .PHONY: default all clean
 
-default: lsh_parallel_5
+default: lsh_parallel_4
 
 all: $(FILES)
 
