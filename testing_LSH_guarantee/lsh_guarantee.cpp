@@ -529,21 +529,13 @@ int main(int argc, char** argv) {
     // - Array allocation and initialization -
     // holds the actual matches
     int* lshMatches = (int*)malloc(nQueryVecs * sizeof(int));
-    memset(lshMatches, -1, nQueryVecs * sizeof(int));
     // holds the best match distance for each query vector
     float* bestMatchDists = (float*)malloc(nQueryVecs * sizeof(float));
-    for (int i = 0; i < nQueryVecs; i++) {
-        bestMatchDists[i] = 1e10;
-    }
 
     // Holds the second best matches
     int* lshMatches2 = (int*)malloc(nQueryVecs * sizeof(int));
-    memset(lshMatches2, -1, nQueryVecs * sizeof(int));
     // holds the second best match distance for each query vector
     float* bestMatchDists2 = (float*)malloc(nQueryVecs * sizeof(float));
-    for (int i = 0; i < nQueryVecs; i++) {
-        bestMatchDists[i] = 1e10;
-    }
 
     // squared distance from each hyperplane for each point
     float* sqrdDists = (float*)malloc(nBaseVecs * nPlanes * sizeof(float));
@@ -654,6 +646,13 @@ int main(int argc, char** argv) {
     }
     free(tmpGT);
 
+    printf("\n");
+    printf("Potential matches found: %d\n", nPotentialMatches);
+    double matchesPerQueryVector = ((double)nPotentialMatches) / nQueryVecs;
+    printf("Comparisons per query vector: %f\n", matchesPerQueryVector);
+    printf("Average portion of search space searched: %f\n", matchesPerQueryVector / nBaseVecs);
+    printf("\n");
+
     // - Check how many matches were correct -
     int correct = 0;
     for (int i = 0; i < nQueryVecs; i++) {
@@ -661,13 +660,6 @@ int main(int argc, char** argv) {
     }
     double correctRatio = ((double)correct) / nQueryVecs;
     printf("Correct ratio: %f\n", correctRatio);
-
-    printf("\n");
-    printf("Potential matches found: %d\n", nPotentialMatches);
-    double matchesPerQueryVector = ((double)nPotentialMatches) / nQueryVecs;
-    printf("Comparisons per query vector: %f\n", matchesPerQueryVector);
-    printf("Average portion of search space searched: %f\n", matchesPerQueryVector / nBaseVecs);
-    printf("\n");
 
     // --- Free memory ---
 

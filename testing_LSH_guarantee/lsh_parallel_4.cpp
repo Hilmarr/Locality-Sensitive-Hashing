@@ -388,10 +388,10 @@ void match_points(int nQueryVecs,
     pcopyin(baseVecs[nBaseVecs*vectorLength]) \
     pcopyin(potentialMatches[nPotentialMatches])\
     pcopyin(potentialMatchesIndices[nQueryVecs+1]) \
-    pcopy(lshMatches[nQueryVecs]) \
-    pcopy(bestMatchDists[nQueryVecs]) \
-    pcopy(lshMatches2[nQueryVecs]) \
-    pcopy(bestMatchDists2[nQueryVecs]) 
+    pcopyout(lshMatches[nQueryVecs]) \
+    pcopyout(bestMatchDists[nQueryVecs]) \
+    pcopyout(lshMatches2[nQueryVecs]) \
+    pcopyout(bestMatchDists2[nQueryVecs]) 
  {
     #pragma acc parallel loop
     for (int i = 0; i < nQueryVecs; i++) {
@@ -551,21 +551,13 @@ int main(int argc, char** argv) {
     // - Array allocation and initialization -
     // holds the actual matches
     int* lshMatches = (int*)malloc(nQueryVecs * sizeof(int));
-    memset(lshMatches, -1, nQueryVecs * sizeof(int));
     // holds the best match distance for each query vector
     float* bestMatchDists = (float*)malloc(nQueryVecs * sizeof(float));
-    for (int i = 0; i < nQueryVecs; i++) {
-        bestMatchDists[i] = 1e10;
-    }
 
     // Holds the second best matches
     int* lshMatches2 = (int*)malloc(nQueryVecs * sizeof(int));
-    memset(lshMatches2, -1, nQueryVecs * sizeof(int));
     // holds the second best match distance for each query vector
     float* bestMatchDists2 = (float*)malloc(nQueryVecs * sizeof(float));
-    for (int i = 0; i < nQueryVecs; i++) {
-        bestMatchDists[i] = 1e10;
-    }
 
     // squared distance from each hyperplane for each point
     float* sqrdDists = (float*)malloc(nBaseVecs * nPlanes * sizeof(float));
@@ -676,6 +668,13 @@ int main(int argc, char** argv) {
     }
     free(tmpGT);
 
+    printf("\n");
+    printf("Potential matches found: %d\n", nPotentialMatches);
+    double matchesPerQueryVector = ((double)nPotentialMatches) / nQueryVecs;
+    printf("Comparisons per query vector: %f\n", matchesPerQueryVector);
+    printf("Average portion of search space searched: %f\n", matchesPerQueryVector / nBaseVecs);
+    printf("\n");
+
     // - Check how many matches were correct -
     int correct = 0;
     for (int i = 0; i < nQueryVecs; i++) {
@@ -683,13 +682,6 @@ int main(int argc, char** argv) {
     }
     double correctRatio = ((double)correct) / nQueryVecs;
     printf("Correct ratio: %f\n", correctRatio);
-
-    printf("\n");
-    printf("Potential matches found: %d\n", nPotentialMatches);
-    double matchesPerQueryVector = ((double)nPotentialMatches) / nQueryVecs;
-    printf("Comparisons per query vector: %f\n", matchesPerQueryVector);
-    printf("Average portion of search space searched: %f\n", matchesPerQueryVector / nBaseVecs);
-    printf("\n");
 
     // --- Free memory ---
 

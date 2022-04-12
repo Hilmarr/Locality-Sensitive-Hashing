@@ -5,7 +5,7 @@
 #include <numeric>
 
 #define TIME_LSH
-#define NVTX_PROFILE
+// #define NVTX_PROFILE
 
 #ifdef TIME_LSH
 #include <sys/time.h>
@@ -379,6 +379,7 @@ void match_points(int nQueryVecs,
                   int nPotentialMatches,
                   int* __restrict__ potentialMatches,
                   int* __restrict__ potentialMatchesIndices,
+                  int* __restrict__ potentialMatchesLengths,
                   // outputs
                   int* __restrict__ lshMatches, float* __restrict__ bestMatchDists,
                   int* __restrict__ lshMatches2, float* __restrict__ bestMatchDists2)
@@ -387,7 +388,8 @@ void match_points(int nQueryVecs,
     pcopyin(queryVecs[nQueryVecs*vectorLength]) \
     pcopyin(baseVecs[nBaseVecs*vectorLength]) \
     pcopyin(potentialMatches[nPotentialMatches])\
-    pcopyin(potentialMatchesIndices[nQueryVecs+1]) \
+    pcopyin(potentialMatchesIndices[nQueryVecs]) \
+    pcopyin(potentialMatchesLengths[nQueryVecs]) \
     pcopy(lshMatches[nQueryVecs]) \
     pcopy(bestMatchDists[nQueryVecs]) \
     pcopy(lshMatches2[nQueryVecs]) \
@@ -397,12 +399,12 @@ void match_points(int nQueryVecs,
     for (int i = 0; i < nQueryVecs; i++) {
         // Find the group of elements from groupArray to match with
         bool changed = false;
-        float bestMatchDist = 1e10;
-        float bestMatchDist2 = 1e10;
+        float bestMatchDist = bestMatchDists[i];
+        float bestMatchDist2 = bestMatchDist;
         int match = -1;
         int match2 = -1;
         int jStart = potentialMatchesIndices[i];
-        int jEnd = potentialMatchesIndices[i + 1];
+        int jEnd = jStart + potentialMatchesLengths[i];
 
         // Match the points
         for (int j = jStart; j < jEnd; j++) {
@@ -642,6 +644,12 @@ int main(int argc, char** argv) {
 
     free(indexGroupMap);
 
+    int* potentialMatchesLengths = (int*) malloc(nQueryVecs * sizeof(int));
+    for (int i = 0; i < nQueryVecs; i++) {
+        potentialMatchesLengths[i] = potentialMatchesIndices[i+1] - potentialMatchesIndices[i];
+    }
+
+
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
@@ -653,7 +661,7 @@ int main(int argc, char** argv) {
 
     // - Compare points -
     match_points(nQueryVecs, nBaseVecs, queryVecs, baseVecs, nPotentialMatches,
-                 potentialMatches, potentialMatchesIndices,
+                 potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
                  lshMatches, bestMatchDists, lshMatches2, bestMatchDists2);
 
 #ifdef NVTX_PROFILE
@@ -703,6 +711,7 @@ int main(int argc, char** argv) {
     free(groupArray);
     free(potentialMatches);
     free(potentialMatchesIndices);
+    free(potentialMatchesLengths);
 
     free(lshMatches);
     free(bestMatchDists);

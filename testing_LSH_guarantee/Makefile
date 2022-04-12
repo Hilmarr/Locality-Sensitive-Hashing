@@ -1,5 +1,5 @@
 # CC = g++
-# CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic -g -pg
+# CFLAGS = -O1 -fno-tree-vectorize -Wall -Wextra -Wpedantic # -g -pg
 
 CC = pgc++
 CFLAGS = -Wall -Wextra -acc -fast -Minfo=all
