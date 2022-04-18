@@ -1,5 +1,5 @@
 % set seed
-rng(0)
+% rng(0)
 
 nPoints = 100000;
 vectorLength = 128;
