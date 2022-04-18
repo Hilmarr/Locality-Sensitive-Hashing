@@ -2,12 +2,12 @@
 % Create nTables * maxPlanes number of hyperplanes
 
 % set seed
-rng(0)
+% rng(0)
 
 vectorLength = 128;
 
 maxPlanes = 32;
-nTables = 100;
+nTables = 1;
 hplanes = 2*rand(maxPlanes, vectorLength)-1;
 hplaneTables = 2*rand(nTables * maxPlanes, vectorLength)-1;
 
@@ -71,6 +71,6 @@ end
 fprintf("- For all tables: Number of hyperplanes not orthogonal: %d\n", cnt);
 fprintf("- For all tables: Number of sums not zero: %d\n", cnt);
 
-fileID = fopen('hyperplaneTables.dat','w');
+fileID = fopen('orthogonal_hplanes.dat','w');
 fwrite(fileID,hplaneTables','float32');
 fclose(fileID);
