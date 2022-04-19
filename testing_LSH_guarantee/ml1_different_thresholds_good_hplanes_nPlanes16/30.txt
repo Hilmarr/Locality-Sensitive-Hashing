@@ -1,0 +1,22 @@
+[hilmarrw@ml1 testing_LSH_guarantee]$ time ./lsh_parallel_5 ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs Better_orthogonal_zerosum_hyperplanes/better_hyperplanes_1.dat 
+calculate_hash_values for base vectors:
+   - time: 0.267 seconds
+organize_points_into_groups:
+   - time: 0.009 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.004 seconds
+find_potential_matches for query vectors:
+   - time: 0.574 seconds
+match points:
+   - time: 0.625 seconds
+
+Potential matches found: 166395048
+Comparisons per query vector: 16639.504800
+Average portion of search space searched: 0.016640
+
+Correct ratio: 0.750000
+
+real	0m1,992s
+user	0m1,193s
+sys	0m0,778s
+
