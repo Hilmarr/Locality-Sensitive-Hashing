@@ -440,7 +440,7 @@ int main(int argc, char** argv) {
     int nBaseVecs = 0;   // number of base vectors
     int nQueryVecs = 0;  // number of query vectors
 
-    const int nPlanes = 8;
+    const int nPlanes = 16;
 
     // -----    Read data    -----
 
