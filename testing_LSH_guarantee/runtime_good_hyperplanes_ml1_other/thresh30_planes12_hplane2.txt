@@ -1,0 +1,45 @@
+[hilmarrw@ml1 testing_LSH_guarantee]$ time ./lsh_parallel_5 ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs Better_orthogonal_zerosum_hyperplanes/better_hyperplanes_2.dat 
+calculate_hash_values for base vectors:
+   - time: 0.265 seconds
+organize_points_into_groups:
+   - time: 0.005 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.003 seconds
+find_potential_matches for query vectors:
+   - time: 0.917 seconds
+match points:
+   - time: 1.074 seconds
+
+Potential matches found: 425049980
+Comparisons per query vector: 42504.998000
+Average portion of search space searched: 0.042505
+
+Correct ratio: 0.817700
+
+real	0m2,803s
+user	0m1,563s
+sys	0m1,216s
+
+
+[hilmarrw@ml1 testing_LSH_guarantee]$ time ./lsh_parallel_5 ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs Better_orthogonal_zerosum_hyperplanes/better_hyperplanes_2.dat 
+calculate_hash_values for base vectors:
+   - time: 0.260 seconds
+organize_points_into_groups:
+   - time: 0.006 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.002 seconds
+find_potential_matches for query vectors:
+   - time: 0.919 seconds
+match points:
+   - time: 1.079 seconds
+
+Potential matches found: 425049980
+Comparisons per query vector: 42504.998000
+Average portion of search space searched: 0.042505
+
+Correct ratio: 0.817700
+
+real	0m2,816s
+user	0m1,574s
+sys	0m1,219s
+
