@@ -1,0 +1,21 @@
+time ./lsh_serial ../test_data/siftsmall/siftsmall_base.fvecs ../test_data/siftsmall/siftsmall_query.fvecs ../test_data/siftsmall/siftsmall_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+Calculating hash values for base vectors:
+   - time: 0.290 seconds
+Constructing lsh tables:
+   - time: 0.001 seconds
+Calculating hash values for query vectors:
+   - time: 0.003 seconds
+Finding potential matches
+   - time: 0.004 seconds
+Matching potential matches
+   - time: 0.042 seconds
+
+Potential matches found: 299127
+Comparisons per query vector: 2991.270000
+Average portion of search space searched: 0.299127
+
+Correct ratio: 0.990000
+
+real	0m0,350s
+user	0m0,337s
+sys	0m0,010s

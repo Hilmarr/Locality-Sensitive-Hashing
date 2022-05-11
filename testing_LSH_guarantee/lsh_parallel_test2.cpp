@@ -97,16 +97,25 @@ void calculate_hash_values_and_dists(
     int* __restrict__ indexGroupMap,
     float* __restrict__ sqrdDists)
 {
+#pragma acc data \
+  pcopyin(points[nPoints*vectorLength]) \
+  pcopyin(hyperplanes[nPlanes*vectorLength]) \
+  pcopyout(indexGroupMap[nPoints]) \
+  pcopyout(sqrdDists[nPoints*nPlanes])
+ {
     // - Calculate hash values, keep track of sizes of each group -
+    #pragma acc parallel loop gang worker num_workers(128) vector_length(8)
     for (int i = 0; i < nPoints; i++) {
         float* point = &points[i * vectorLength];
         int hashcode = 0;  //  hashcode will be the group index
 
         // calculate hash value of the i'th point, store resut in indexGroupMap
+        #pragma acc loop reduction(|:hashcode) vector
         for (int j = 0; j < nPlanes; j++) {
             float* hplane = &hyperplanes[j * vectorLength];  // first hyperplane
             // calculate point * hplane
             float vecMul = 0;
+            #pragma acc loop reduction(+:vecMul) seq
             for (int k = 0; k < vectorLength; k++) {
                 vecMul += point[k] * hplane[k];
             }
@@ -120,6 +129,7 @@ void calculate_hash_values_and_dists(
         }
         indexGroupMap[i] = hashcode;  // save the hashcode
     }
+ }
 }
 
 /**
@@ -440,7 +450,7 @@ int main(int argc, char** argv) {
     int nBaseVecs = 0;   // number of base vectors
     int nQueryVecs = 0;  // number of query vectors
 
-    const int nPlanes = 8;
+    const int nPlanes = 16;
 
     // -----    Read data    -----
 

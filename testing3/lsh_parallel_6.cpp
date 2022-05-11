@@ -289,7 +289,7 @@ int main(int argc, char** argv) {
     // -- Generate some random points and similar random points to match with --
 
     // const int nPlanes = (int) log2(nPoints1);
-    const int nPlanes = 16;
+    const int nPlanes = 8;
 
     // -- Generate hyperplanes --
 

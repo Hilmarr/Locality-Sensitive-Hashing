@@ -1,4 +1,4 @@
-#include <nvToolsExt.h>
+// #include <nvToolsExt.h>
 
 #include <cmath>
 #include <cstring>
@@ -345,11 +345,11 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    nvtxRangePush("Calculating hash values for base vectors");
+    // nvtxRangePush("Calculating hash values for base vectors");
     // calculate indices into lsh tables for the original set
     calculate_indexGroupMap(vectorLength, numTables, nPoints1, points1,
                             nPlanes, hyperplanes, indexGroupMapTableLen, indexGroupMap);
-    nvtxRangePop();
+    // nvtxRangePop();
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -367,7 +367,7 @@ int main(int argc, char** argv) {
 #endif
 
     // -- Construct and store LSH tables --
-    nvtxRangePush("Constructing lsh tables");
+    // nvtxRangePush("Constructing lsh tables");
     construct_lsh_tables(  // input
         vectorLength, numTables, nGroups,
         nPoints1, points1,
@@ -376,7 +376,7 @@ int main(int argc, char** argv) {
         // output
         groupArray,
         groupSizeMap, groupIndexMap);
-    nvtxRangePop();
+    // nvtxRangePop();
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -393,11 +393,11 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    nvtxRangePush("Calculating hash values for query vectors");
+    // nvtxRangePush("Calculating hash values for query vectors");
     // calculate indices into lsh tables for the matching set
     calculate_indexGroupMap(vectorLength, numTables, nPoints2, points2,
                             nPlanes, hyperplanes, indexGroupMapTableLen2, indexGroupMap2);
-    nvtxRangePop();
+    // nvtxRangePop();
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -409,7 +409,7 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    nvtxRangePush("Finding potential matches");
+    // nvtxRangePush("Finding potential matches");
     // Array allocation
     // int potentialMatchesMaxLen = nPoints2 * 128;
     int potentialMatchesMaxLen = 1e9;
@@ -426,7 +426,7 @@ int main(int argc, char** argv) {
         // outputs
         &potentialMatches, potentialMatchesIndices,
         potentialMatchesLengths);
-    nvtxRangePop();
+    // nvtxRangePop();
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);
@@ -438,7 +438,7 @@ int main(int argc, char** argv) {
     startTime = (time.tv_sec * 1000) + (time.tv_usec / 1000);
 #endif
 
-    nvtxRangePush("Matching potential matches");
+    // nvtxRangePush("Matching potential matches");
     // Array allocation and initialization
     // holds the actual matches
     int* lshMatches = (int*)malloc(nPoints2 * sizeof(int));
@@ -462,7 +462,7 @@ int main(int argc, char** argv) {
                  nPotentialMatches, potentialMatches, potentialMatchesIndices, potentialMatchesLengths,
                  lshMatches, bestMatchDists,
                  lshMatches2, bestMatchDists2);
-    nvtxRangePop();
+    // nvtxRangePop();
 
 #ifdef TIME_LSH
     gettimeofday(&time, NULL);

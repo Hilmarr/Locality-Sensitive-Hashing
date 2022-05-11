@@ -1,0 +1,21 @@
+time ./lsh_guarantee ../test_data/siftsmall/siftsmall_base.fvecs ../test_data/siftsmall/siftsmall_query.fvecs ../test_data/siftsmall/siftsmall_groundtruth.ivecs ../creating_hyperplanes/better_hyperplanes.dat
+calculate_hash_values for base vectors:
+   - time: 0.001 seconds
+organize_points_into_groups:
+   - time: 0.000 seconds
+calculate_hash_values_and_dists for query vectors:
+   - time: 0.000 seconds
+find_potential_matches for query vectors:
+   - time: 0.001 seconds
+match points:
+   - time: 0.005 seconds
+
+Potential matches found: 142943
+Comparisons per query vector: 1429.430000
+Average portion of search space searched: 0.142943
+
+Correct ratio: 0.910000
+
+real	0m0,019s
+user	0m0,011s
+sys	0m0,007s

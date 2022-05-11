@@ -133,6 +133,37 @@ profile_lsh_parallel_6_sift: lsh_parallel_6
 	../test_data/sift/sift_groundtruth.ivecs \
 	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
 
+run_lsh_parallel_6_siftsmall: lsh_parallel_6
+	./lsh_parallel_6 \
+	../test_data/siftsmall/siftsmall_base.fvecs \
+	../test_data/siftsmall/siftsmall_query.fvecs \
+	../test_data/siftsmall/siftsmall_groundtruth.ivecs \
+	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+
+profile_lsh_parallel_6_siftsmall: lsh_parallel_6
+	nvprof --unified-memory-profiling off ./lsh_parallel_6 \
+	../test_data/siftsmall/siftsmall_base.fvecs \
+	../test_data/siftsmall/siftsmall_query.fvecs \
+	../test_data/siftsmall/siftsmall_groundtruth.ivecs \
+	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+
+
+
+run_lsh_serial_6_siftsmall: lsh_serial
+	./lsh_serial \
+	../test_data/siftsmall/siftsmall_base.fvecs \
+	../test_data/siftsmall/siftsmall_query.fvecs \
+	../test_data/siftsmall/siftsmall_groundtruth.ivecs \
+	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+
+profile_lsh_serial_6_siftsmall: lsh_serial
+	nvprof --unified-memory-profiling off ./lsh_serial \
+	../test_data/siftsmall/siftsmall_base.fvecs \
+	../test_data/siftsmall/siftsmall_query.fvecs \
+	../test_data/siftsmall/siftsmall_groundtruth.ivecs \
+	../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
+
+
 
 # ../test_data/sift/sift_base.fvecs ../test_data/sift/sift_query.fvecs ../test_data/sift/sift_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
 # ../test_data/siftsmall/siftsmall_base.fvecs ../test_data/siftsmall/siftsmall_query.fvecs ../test_data/siftsmall/siftsmall_groundtruth.ivecs ../creating_hyperplanes/random_1000_zerosum_unit_hyperplanes.dat
