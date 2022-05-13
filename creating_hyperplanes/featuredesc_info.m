@@ -1,10 +1,11 @@
 % Getting some basic info from the feature descriptors
 
-% meanDistPoints = 536.3315;
 % meanLengths = 508.6323;
 % meanDistHyperplanes = 28.3056;
 % meanDistPoints = 536.3315;
 % Average distance between best matches = 187.751004
+% mean distance from improved hyperplanes = 25.8615
+%            [68, 26, 22, 23, ..., 26, 19, 19]
 
 
 nPoints = 100000;
@@ -41,6 +42,23 @@ for i = 1:nPlanes
 end
 meanDistHyperplanes = distAcc / (nPlanes*nPoints);
 
+%% Find average distance from improved hyperplanes
+fileID = fopen('better_hyperplanes_2.dat','r');
+hyperplanes2 = fread(fileID,[128,nPlanes],'float32');
+fclose(fileID);
+hyperplanes2 = hyperplanes2';
+s = size(hyperplanes2);
+
+distAccs = zeros(1,s(1));
+for i = 1:s(1)
+    for j = 1:nPoints
+        distAccs(i) = distAccs(i) + sqrt((points(j,:)*hyperplanes2(i,:)')^2);
+    end
+    distAccs(i) = distAccs(i) /  nPoints;
+end
+% meanDistHyperplanes2 = distAcc / (s(1)*nPoints);
+meanDistHyperplanes2 = mean(distAccs);
+
 %% Find average distance between random points
 distAcc = 0;
 N = 200000;
@@ -55,12 +73,5 @@ for k = 1:N
 end
 meanDistPoints = distAcc / N;
 
-    
-
-% accDists = 0;
-% 
-% for i = 1:nPlanes
-%     for j = 1:nPoints
-%         accDists = accDists + points
 
 
