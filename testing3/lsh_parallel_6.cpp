@@ -514,6 +514,19 @@ int main(int argc, char** argv) {
     double correctRatio = ((double) correct) / nPoints2;
     printf("Correct ratio: %f\n", correctRatio);
 
+    double* distAcc = 0;
+    for (int i = 0; i < nPoints2; i++) {
+        double acc = 0;
+        float* basepoint = &points1[groundTruth[i]*vectorLength];
+        float* querypoint = &points2[i*vectorLength];
+        for (int j = 0; j < vectorLength; j++) {
+            acc += (basepoint[j] - querypoint[j]) * (basepoint[j] - querypoint[j]);
+        }
+        distAcc += sqrt(acc);
+    }
+    distAcc = distAcc / nPoints2;
+    printf("Average distance between best matches = %f\n", distAcc);
+
     free(points1);
     free(points2);
     free(hyperplanes);
