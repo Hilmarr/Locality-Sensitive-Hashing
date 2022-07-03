@@ -24,8 +24,8 @@ function [setLen, combMasks, combDists] = ...
     underThreshLen = setLen;
     for k = (underThreshLen-1):-1:1
         tmp = setLen;
-        for i = (k+1):setLen
-            if (combDists{k} < threshold)
+        if (combDists{k} < threshold)
+            for i = (k+1):setLen
                 dist = combDists{k} + combDists{i};
                 if (dist < threshold)
                     tmp = tmp + 1;
