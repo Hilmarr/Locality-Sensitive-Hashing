@@ -11,3 +11,6 @@ Then there is a folder with two fully implemented versions of LSH, one using sev
 There are also some matlab prototypes which are probably easier to read, though may also contain more errors.
 
 The two pdf's are my master's thesis and the slides for my master's presentation respectively.
+
+The files for the example SIFT feature descriptors are not included in the repo to save space.
+
