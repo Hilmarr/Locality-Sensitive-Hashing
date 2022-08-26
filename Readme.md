@@ -4,7 +4,7 @@ A few implementations of Locality Sensitive Hashing
 
 Most of the actual interesting stuff has been moved or copied to the "SUMMARY" folder.
 
-In the summary folder there are:
+In the SUMMARY folder there are:
 
 * Some programs for creating orthogonal hyperplanes with elements that sum to zero, sometimes made to fit some input points.
 
